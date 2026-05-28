@@ -2,6 +2,14 @@
 name = "agrovest-backend"
 version = "0.1.0"
 edition = "2021"
+description = "Backend API server for AgroVest - a Web3 agricultural investment and marketplace platform on Stellar Soroban"
+license = "MIT"
+repository = "https://github.com/AgroVestOfficial/AgroVest-Backend"
+homepage = "https://github.com/AgroVestOfficial/AgroVest-Backend"
+keywords = ["stellar", "soroban", "agriculture", "web3", "marketplace"]
+categories = ["web-programming::http-server", "database"]
+authors = ["AgroVest Team"]
+readme = "README.md"
 
 [dependencies]
 axum = { version = "0.7", features = ["macros", "multipart"] }
