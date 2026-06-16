@@ -42,7 +42,9 @@ async fn list_escrows(
     };
     let result =
         escrow_service::list_escrows(&state.db, &auth.address, &pagination, &filter).await?;
-    Ok(Json(serde_json::to_value(result).unwrap()))
+    Ok(Json(
+        serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_escrow(
@@ -50,7 +52,9 @@ async fn get_escrow(
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let escrow = escrow_service::get_escrow(&state.db, id).await?;
-    Ok(Json(serde_json::to_value(escrow).unwrap()))
+    Ok(Json(
+        serde_json::to_value(escrow).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn create_escrow(
@@ -59,7 +63,9 @@ async fn create_escrow(
     Json(data): Json<CreateEscrow>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let escrow = escrow_service::create_escrow(&state.db, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(escrow).unwrap()))
+    Ok(Json(
+        serde_json::to_value(escrow).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn approve_delivery(
@@ -73,7 +79,9 @@ async fn approve_delivery(
     }
     let updated =
         escrow_service::update_escrow_status(&state.db, id, EscrowStatus::Complete).await?;
-    Ok(Json(serde_json::to_value(updated).unwrap()))
+    Ok(Json(
+        serde_json::to_value(updated).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn raise_dispute(
@@ -87,5 +95,7 @@ async fn raise_dispute(
     }
     let updated =
         escrow_service::update_escrow_status(&state.db, id, EscrowStatus::Dispute).await?;
-    Ok(Json(serde_json::to_value(updated).unwrap()))
+    Ok(Json(
+        serde_json::to_value(updated).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }

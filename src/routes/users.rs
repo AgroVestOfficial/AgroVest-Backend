@@ -21,7 +21,9 @@ async fn get_user(
     Path(address): Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let user = user_service::get_user(&state.db, &address).await?;
-    Ok(Json(serde_json::to_value(user).unwrap()))
+    Ok(Json(
+        serde_json::to_value(user).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn update_user(
@@ -34,5 +36,7 @@ async fn update_user(
         return Err(ApiError::Forbidden);
     }
     let user = user_service::update_user(&state.db, &address, update).await?;
-    Ok(Json(serde_json::to_value(user).unwrap()))
+    Ok(Json(
+        serde_json::to_value(user).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }

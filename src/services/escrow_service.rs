@@ -9,33 +9,62 @@ pub async fn list_escrows(
     pagination: &PaginationParams,
     filter: &EscrowFilter,
 ) -> Result<PaginatedResponse<Escrow>, ApiError> {
-    let mut where_clause = format!(
-        "WHERE (buyer = '{}' OR farmer = '{}')",
-        user_address, user_address
-    );
+    let mut builder = sqlx::QueryBuilder::new("SELECT * FROM escrows WHERE ");
 
-    if let Some(ref role) = filter.role {
-        match role.as_str() {
-            "buyer" => where_clause = format!("WHERE buyer = '{}'", user_address),
-            "farmer" => where_clause = format!("WHERE farmer = '{}'", user_address),
-            _ => {}
+    match filter.role.as_deref() {
+        Some("buyer") => {
+            builder.push("buyer = ");
+            builder.push_bind(user_address);
+        }
+        Some("farmer") => {
+            builder.push("farmer = ");
+            builder.push_bind(user_address);
+        }
+        _ => {
+            builder.push("(buyer = ");
+            builder.push_bind(user_address);
+            builder.push(" OR farmer = ");
+            builder.push_bind(user_address);
+            builder.push(")");
         }
     }
 
     if let Some(ref status) = filter.status {
-        where_clause.push_str(&format!(" AND status = '{}'", status));
+        builder.push(" AND status = ");
+        builder.push_bind(status);
     }
 
-    let count_sql = format!("SELECT COUNT(*) FROM escrows {}", where_clause);
-    let sql = format!(
-        "SELECT * FROM escrows {} ORDER BY created_at DESC LIMIT {} OFFSET {}",
-        where_clause,
-        pagination.per_page(),
-        pagination.offset()
-    );
+    builder.push(" ORDER BY created_at DESC LIMIT ");
+    builder.push_bind(pagination.per_page() as i64);
+    builder.push(" OFFSET ");
+    builder.push_bind(pagination.offset() as i64);
 
-    let total: (i64,) = sqlx::query_as(&count_sql).fetch_one(pool).await?;
-    let escrows = sqlx::query_as::<_, Escrow>(&sql).fetch_all(pool).await?;
+    let escrows = builder.build_query_as::<Escrow>().fetch_all(pool).await?;
+
+    let mut count_builder = sqlx::QueryBuilder::new("SELECT COUNT(*) FROM escrows WHERE ");
+    match filter.role.as_deref() {
+        Some("buyer") => {
+            count_builder.push("buyer = ");
+            count_builder.push_bind(user_address);
+        }
+        Some("farmer") => {
+            count_builder.push("farmer = ");
+            count_builder.push_bind(user_address);
+        }
+        _ => {
+            count_builder.push("(buyer = ");
+            count_builder.push_bind(user_address);
+            count_builder.push(" OR farmer = ");
+            count_builder.push_bind(user_address);
+            count_builder.push(")");
+        }
+    }
+    if let Some(ref status) = filter.status {
+        count_builder.push(" AND status = ");
+        count_builder.push_bind(status);
+    }
+
+    let total: (i64,) = count_builder.build_query_as().fetch_one(pool).await?;
 
     Ok(PaginatedResponse::new(
         escrows,

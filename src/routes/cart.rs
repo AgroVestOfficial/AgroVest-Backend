@@ -21,7 +21,9 @@ async fn get_cart(
     auth: AuthUser,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let items = cart_service::get_cart(&state.db, &auth.address).await?;
-    Ok(Json(serde_json::to_value(items).unwrap()))
+    Ok(Json(
+        serde_json::to_value(items).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn add_to_cart(
@@ -30,7 +32,9 @@ async fn add_to_cart(
     Json(data): Json<AddToCart>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let item = cart_service::add_to_cart(&state.db, &auth.address, data.product_id).await?;
-    Ok(Json(serde_json::to_value(item).unwrap()))
+    Ok(Json(
+        serde_json::to_value(item).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn remove_from_cart(

@@ -8,35 +8,35 @@ pub async fn list_products(
     pagination: &PaginationParams,
     filter: &ProductFilter,
 ) -> Result<PaginatedResponse<Product>, ApiError> {
-    let mut query = String::from("SELECT * FROM products WHERE 1=1");
-    let mut count_query = String::from("SELECT COUNT(*) FROM products WHERE 1=1");
-    let mut bind_idx = 1;
+    let mut builder = sqlx::QueryBuilder::new("SELECT * FROM products WHERE 1=1");
+    let mut count_builder = sqlx::QueryBuilder::new("SELECT COUNT(*) FROM products WHERE 1=1");
 
-    if filter.category.is_some() {
-        query.push_str(&format!(" AND category = ${}", bind_idx));
-        count_query.push_str(&format!(" AND category = ${}", bind_idx));
-        bind_idx += 1;
+    if let Some(ref category) = filter.category {
+        builder.push(" AND category = ");
+        builder.push_bind(category);
+        count_builder.push(" AND category = ");
+        count_builder.push_bind(category);
     }
-    if filter.farm_id.is_some() {
-        query.push_str(&format!(" AND farm_id = ${}", bind_idx));
-        count_query.push_str(&format!(" AND farm_id = ${}", bind_idx));
-        bind_idx += 1;
+    if let Some(farm_id) = filter.farm_id {
+        builder.push(" AND farm_id = ");
+        builder.push_bind(farm_id);
+        count_builder.push(" AND farm_id = ");
+        count_builder.push_bind(farm_id);
     }
-    if filter.sold.is_some() {
-        query.push_str(&format!(" AND sold = ${}", bind_idx));
-        count_query.push_str(&format!(" AND sold = ${}", bind_idx));
-        bind_idx += 1;
+    if let Some(sold) = filter.sold {
+        builder.push(" AND sold = ");
+        builder.push_bind(sold);
+        count_builder.push(" AND sold = ");
+        count_builder.push_bind(sold);
     }
 
-    query.push_str(&format!(
-        " ORDER BY created_at DESC LIMIT ${} OFFSET ${}",
-        bind_idx,
-        bind_idx + 1
-    ));
+    builder.push(" ORDER BY created_at DESC LIMIT ");
+    builder.push_bind(pagination.per_page() as i64);
+    builder.push(" OFFSET ");
+    builder.push_bind(pagination.offset() as i64);
 
-    let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
-
-    let products = sqlx::query_as::<_, Product>(&query).fetch_all(pool).await?;
+    let total: (i64,) = count_builder.build_query_as().fetch_one(pool).await?;
+    let products = builder.build_query_as::<Product>().fetch_all(pool).await?;
 
     Ok(PaginatedResponse::new(
         products,

@@ -41,7 +41,9 @@ async fn list_investments(
     let result =
         investment_service::list_investments(&state.db, &pagination, q.active.unwrap_or(false))
             .await?;
-    Ok(Json(serde_json::to_value(result).unwrap()))
+    Ok(Json(
+        serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_investment(
@@ -49,7 +51,9 @@ async fn get_investment(
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let investment = investment_service::get_investment(&state.db, id).await?;
-    Ok(Json(serde_json::to_value(investment).unwrap()))
+    Ok(Json(
+        serde_json::to_value(investment).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_investors(
@@ -57,7 +61,9 @@ async fn get_investors(
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let investors = investment_service::get_investors(&state.db, id).await?;
-    Ok(Json(serde_json::to_value(investors).unwrap()))
+    Ok(Json(
+        serde_json::to_value(investors).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn create_investment(
@@ -66,7 +72,9 @@ async fn create_investment(
     Json(data): Json<CreateInvestment>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let investment = investment_service::create_investment(&state.db, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(investment).unwrap()))
+    Ok(Json(
+        serde_json::to_value(investment).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn invest(
@@ -76,5 +84,7 @@ async fn invest(
     Json(data): Json<CreateInvestmentEntry>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let investor = investment_service::invest(&state.db, &auth.address, id, data.amount).await?;
-    Ok(Json(serde_json::to_value(investor).unwrap()))
+    Ok(Json(
+        serde_json::to_value(investor).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }

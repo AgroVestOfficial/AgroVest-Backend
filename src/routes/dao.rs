@@ -27,7 +27,9 @@ async fn list_proposals(
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let result = dao_service::list_proposals(&state.db, &pagination).await?;
-    Ok(Json(serde_json::to_value(result).unwrap()))
+    Ok(Json(
+        serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_proposal(
@@ -35,7 +37,9 @@ async fn get_proposal(
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let proposal = dao_service::get_proposal(&state.db, id).await?;
-    Ok(Json(serde_json::to_value(proposal).unwrap()))
+    Ok(Json(
+        serde_json::to_value(proposal).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn create_proposal(
@@ -44,7 +48,9 @@ async fn create_proposal(
     Json(data): Json<CreateProposal>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let proposal = dao_service::create_proposal(&state.db, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(proposal).unwrap()))
+    Ok(Json(
+        serde_json::to_value(proposal).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn vote_proposal(
@@ -54,14 +60,18 @@ async fn vote_proposal(
     Json(data): Json<VoteRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let vote = dao_service::vote_on_proposal(&state.db, &auth.address, id, &data.vote).await?;
-    Ok(Json(serde_json::to_value(vote).unwrap()))
+    Ok(Json(
+        serde_json::to_value(vote).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn list_challenges(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let challenges = dao_service::list_challenges(&state.db).await?;
-    Ok(Json(serde_json::to_value(challenges).unwrap()))
+    Ok(Json(
+        serde_json::to_value(challenges).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn create_challenge(
@@ -70,12 +80,16 @@ async fn create_challenge(
     Json(data): Json<CreateChallenge>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let challenge = dao_service::create_challenge(&state.db, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(challenge).unwrap()))
+    Ok(Json(
+        serde_json::to_value(challenge).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn list_disputes(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
     let disputes = dao_service::list_disputes(&state.db).await?;
-    Ok(Json(serde_json::to_value(disputes).unwrap()))
+    Ok(Json(
+        serde_json::to_value(disputes).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn create_dispute(
@@ -83,5 +97,7 @@ async fn create_dispute(
     Json(data): Json<CreateDispute>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let dispute = dao_service::create_dispute(&state.db, data).await?;
-    Ok(Json(serde_json::to_value(dispute).unwrap()))
+    Ok(Json(
+        serde_json::to_value(dispute).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }

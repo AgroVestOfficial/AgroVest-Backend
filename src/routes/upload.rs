@@ -43,6 +43,7 @@ async fn upload_file(
         return Err(ApiError::BadRequest("No file provided".into()));
     }
 
+    let file_size = file_bytes.len() as i64;
     let result = state
         .ipfs
         .pin_file(&file_name, file_bytes, &mime_type)
@@ -59,7 +60,7 @@ async fn upload_file(
     .bind(&result.cid)
     .bind(&file_name)
     .bind(&mime_type)
-    .bind(result.url.len() as i64)
+    .bind(file_size)
     .bind(&auth.address)
     .execute(&state.db)
     .await
