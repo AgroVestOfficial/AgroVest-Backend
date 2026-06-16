@@ -64,7 +64,9 @@ No `.sqlx/` offline cache directory exists. CI sets `SQLX_OFFLINE=true` to skip 
 4. Add route in `src/routes/` — create `pub fn routes() -> Router<AppState>` and merge it in `routes/mod.rs`
 5. Use `ApiError` variants for error responses, not raw `StatusCode`
 
-## Gotcha: CORS config
+## CORS config
 
-`routes/mod.rs` currently hardcodes `allow_origin(Any)` — the `CORS_ORIGINS` env var
-in `config.rs` is parsed but unused in the router. Don't assume it takes effect.
+`CORS_ORIGINS` (comma-separated) is parsed by `config.rs` and applied in
+`routes/mod.rs` via `AllowOrigin::list()`. Set it to the exact origins the
+frontend is served from. An empty or missing value defaults to
+`http://localhost:3000` and denies all other cross-origin requests.
