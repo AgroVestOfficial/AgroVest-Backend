@@ -16,8 +16,6 @@ use axum::Router;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
-/// Parse a slice of origin strings into `HeaderValue`s, silently dropping
-/// any entry that is not a valid HTTP header value.
 fn build_allowed_origins(origins: &[String]) -> Vec<HeaderValue> {
     origins
         .iter()
@@ -78,8 +76,6 @@ mod tests {
 
     #[test]
     fn origin_with_embedded_newline_is_filtered_out() {
-        // \n (LF) is an HTTP framing character — HeaderValue rejects it.
-        // An attacker could craft such a value to attempt header injection.
         let origins = vec![
             "http://evil.com\nX-Injected: header".to_string(),
             "https://app.agrovest.io".to_string(),
@@ -91,7 +87,6 @@ mod tests {
 
     #[test]
     fn origin_with_carriage_return_is_filtered_out() {
-        // \r (CR) is rejected for the same reason as \n
         let origins = vec![
             "http://evil.com\rX-Injected: header".to_string(),
             "http://localhost:3000".to_string(),
@@ -103,7 +98,6 @@ mod tests {
 
     #[test]
     fn origin_with_null_byte_is_filtered_out() {
-        // Null bytes (\x00) are always invalid in HTTP header values
         let origins = vec![
             "http://evil\x00.com".to_string(),
             "https://staging.agrovest.io".to_string(),
@@ -115,8 +109,6 @@ mod tests {
 
     #[test]
     fn all_invalid_origins_filtered_leaves_empty_deny_all_list() {
-        // All entries contain characters that HeaderValue rejects;
-        // the result must be empty → AllowOrigin::list([]) denies every origin.
         let origins = vec![
             "http://evil.com\n".to_string(),
             "http://other.com\r".to_string(),
@@ -140,7 +132,6 @@ mod tests {
 
     #[test]
     fn config_parses_comma_separated_cors_origins_with_whitespace_trimming() {
-        // Mirrors what AppConfig::from_env() does with the CORS_ORIGINS env var
         let raw = "http://localhost:3000, https://app.agrovest.io , https://staging.agrovest.io";
         let parsed: Vec<String> = raw.split(',').map(|s| s.trim().to_string()).collect();
 
