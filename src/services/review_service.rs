@@ -31,5 +31,5 @@ pub async fn create_review(
     .bind(product_id)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }

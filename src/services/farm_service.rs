@@ -63,7 +63,7 @@ pub async fn create_farm(
     .bind(farmer_address)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }
 
 pub async fn update_farm(

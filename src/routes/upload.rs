@@ -1,6 +1,6 @@
 use axum::{
     extract::{Multipart, State},
-    routing::{get, post},
+    routing::post,
     Json, Router,
 };
 
@@ -64,7 +64,7 @@ async fn upload_file(
     .bind(&auth.address)
     .execute(&state.db)
     .await
-    .map_err(|e| ApiError::Database(e))?;
+    .map_err(ApiError::Database)?;
 
     Ok(Json(serde_json::json!({
         "cid": result.cid,

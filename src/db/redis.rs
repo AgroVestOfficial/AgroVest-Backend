@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use redis::aio::ConnectionManager;
 use redis::AsyncCommands;
 

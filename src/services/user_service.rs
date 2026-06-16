@@ -22,7 +22,7 @@ pub async fn upsert_user(pool: &PgPool, address: &str) -> Result<User, ApiError>
     .bind(address)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }
 
 pub async fn update_user(
