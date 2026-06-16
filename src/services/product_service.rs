@@ -102,7 +102,7 @@ pub async fn create_product(
     .bind(&data.category)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }
 
 pub async fn update_product(

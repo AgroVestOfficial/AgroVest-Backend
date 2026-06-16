@@ -77,7 +77,7 @@ pub async fn create_investment(
     .bind(data.end_date)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }
 
 pub async fn invest(
@@ -86,7 +86,7 @@ pub async fn invest(
     investment_id: i32,
     amount: i64,
 ) -> Result<Investor, ApiError> {
-    let mut tx = pool.begin().await.map_err(|e| ApiError::Database(e))?;
+    let mut tx = pool.begin().await.map_err(ApiError::Database)?;
 
     let investment = sqlx::query_as::<_, Investment>(
         "SELECT * FROM investments WHERE id = $1 AND is_active = true FOR UPDATE",
@@ -113,7 +113,7 @@ pub async fn invest(
     .bind(amount)
     .fetch_one(&mut *tx)
     .await
-    .map_err(|e| ApiError::Database(e))?;
+    .map_err(ApiError::Database)?;
 
     sqlx::query(
         "UPDATE investments SET amount_raised = amount_raised + $1, farm_investor_count = farm_investor_count + 1 WHERE id = $2",
@@ -123,7 +123,7 @@ pub async fn invest(
     .execute(&mut *tx)
     .await?;
 
-    tx.commit().await.map_err(|e| ApiError::Database(e))?;
+    tx.commit().await.map_err(ApiError::Database)?;
 
     Ok(investor)
 }

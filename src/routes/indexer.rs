@@ -15,7 +15,7 @@ async fn indexer_status(
     )
     .fetch_all(&state.db)
     .await
-    .map_err(|e| ApiError::Database(e))?;
+    .map_err(ApiError::Database)?;
 
     let statuses: Vec<serde_json::Value> = rows
         .iter()

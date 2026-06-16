@@ -58,7 +58,7 @@ pub async fn create_proposal(
     .bind(proposer)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }
 
 pub async fn vote_on_proposal(
@@ -86,7 +86,7 @@ pub async fn vote_on_proposal(
     .bind(vt)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }
 
 pub async fn list_challenges(pool: &PgPool) -> Result<Vec<Challenge>, ApiError> {
@@ -114,7 +114,7 @@ pub async fn create_challenge(
     .bind(challenger)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }
 
 pub async fn list_disputes(pool: &PgPool) -> Result<Vec<Dispute>, ApiError> {
@@ -136,5 +136,5 @@ pub async fn create_dispute(pool: &PgPool, data: CreateDispute) -> Result<Disput
     .bind(&data.arbitrator)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }

@@ -71,7 +71,7 @@ pub async fn create_escrow(
     .bind(data.order_id)
     .fetch_one(pool)
     .await
-    .map_err(|e| ApiError::Database(e))
+    .map_err(ApiError::Database)
 }
 
 pub async fn update_escrow_status(
