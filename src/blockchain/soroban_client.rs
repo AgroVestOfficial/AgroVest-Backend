@@ -5,7 +5,10 @@ pub struct SorobanClient {
 
 impl SorobanClient {
     pub fn new(rpc_url: String, http_client: reqwest::Client) -> Self {
-        Self { rpc_url, http_client }
+        Self {
+            rpc_url,
+            http_client,
+        }
     }
 
     pub async fn get_events(
@@ -28,7 +31,8 @@ impl SorobanClient {
             }
         });
 
-        let resp = self.http_client
+        let resp = self
+            .http_client
             .post(&self.rpc_url)
             .json(&body)
             .send()

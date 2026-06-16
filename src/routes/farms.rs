@@ -23,7 +23,9 @@ async fn list_farms(
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let result = farm_service::list_farms(&state.db, &pagination).await?;
-    Ok(Json(serde_json::to_value(result).unwrap()))
+    Ok(Json(
+        serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_farm(
@@ -31,7 +33,9 @@ async fn get_farm(
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let farm = farm_service::get_farm(&state.db, id).await?;
-    Ok(Json(serde_json::to_value(farm).unwrap()))
+    Ok(Json(
+        serde_json::to_value(farm).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_farm_by_address(
@@ -39,7 +43,9 @@ async fn get_farm_by_address(
     Path(address): Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let farm = farm_service::get_farm_by_address(&state.db, &address).await?;
-    Ok(Json(serde_json::to_value(farm).unwrap()))
+    Ok(Json(
+        serde_json::to_value(farm).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn create_farm(
@@ -47,10 +53,11 @@ async fn create_farm(
     auth: AuthUser,
     Json(data): Json<CreateFarm>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    // Ensure user exists
     user_service::upsert_user(&state.db, &auth.address).await?;
     let farm = farm_service::create_farm(&state.db, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(farm).unwrap()))
+    Ok(Json(
+        serde_json::to_value(farm).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn update_farm(
@@ -60,5 +67,7 @@ async fn update_farm(
     Json(data): Json<UpdateFarm>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let farm = farm_service::update_farm(&state.db, id, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(farm).unwrap()))
+    Ok(Json(
+        serde_json::to_value(farm).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }

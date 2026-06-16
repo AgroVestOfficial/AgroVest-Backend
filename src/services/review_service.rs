@@ -2,10 +2,7 @@ use crate::error::ApiError;
 use crate::models::review::{CreateReview, Review};
 use sqlx::PgPool;
 
-pub async fn get_product_reviews(
-    pool: &PgPool,
-    product_id: i32,
-) -> Result<Vec<Review>, ApiError> {
+pub async fn get_product_reviews(pool: &PgPool, product_id: i32) -> Result<Vec<Review>, ApiError> {
     let reviews = sqlx::query_as::<_, Review>(
         "SELECT * FROM reviews WHERE product_id = $1 ORDER BY created_at DESC",
     )

@@ -41,7 +41,9 @@ async fn list_products(
         sold: q.sold,
     };
     let result = product_service::list_products(&state.db, &pagination, &filter).await?;
-    Ok(Json(serde_json::to_value(result).unwrap()))
+    Ok(Json(
+        serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_product(
@@ -49,7 +51,9 @@ async fn get_product(
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let product = product_service::get_product(&state.db, id).await?;
-    Ok(Json(serde_json::to_value(product).unwrap()))
+    Ok(Json(
+        serde_json::to_value(product).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_farm_products(
@@ -58,7 +62,9 @@ async fn get_farm_products(
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let result = product_service::get_farm_products(&state.db, farm_id, &pagination).await?;
-    Ok(Json(serde_json::to_value(result).unwrap()))
+    Ok(Json(
+        serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn create_product(
@@ -67,7 +73,9 @@ async fn create_product(
     Json(data): Json<CreateProduct>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let product = product_service::create_product(&state.db, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(product).unwrap()))
+    Ok(Json(
+        serde_json::to_value(product).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn update_product(
@@ -77,5 +85,7 @@ async fn update_product(
     Json(data): Json<UpdateProduct>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let product = product_service::update_product(&state.db, id, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(product).unwrap()))
+    Ok(Json(
+        serde_json::to_value(product).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }

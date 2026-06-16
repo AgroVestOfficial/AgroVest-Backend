@@ -21,7 +21,10 @@ pub struct InvestmentQuery {
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/investments", get(list_investments).post(create_investment))
+        .route(
+            "/investments",
+            get(list_investments).post(create_investment),
+        )
         .route("/investments/{id}", get(get_investment))
         .route("/investments/{id}/investors", get(get_investors))
         .route("/investments/{id}/invest", post(invest))
@@ -38,7 +41,9 @@ async fn list_investments(
     let result =
         investment_service::list_investments(&state.db, &pagination, q.active.unwrap_or(false))
             .await?;
-    Ok(Json(serde_json::to_value(result).unwrap()))
+    Ok(Json(
+        serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_investment(
@@ -46,7 +51,9 @@ async fn get_investment(
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let investment = investment_service::get_investment(&state.db, id).await?;
-    Ok(Json(serde_json::to_value(investment).unwrap()))
+    Ok(Json(
+        serde_json::to_value(investment).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn get_investors(
@@ -54,7 +61,9 @@ async fn get_investors(
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let investors = investment_service::get_investors(&state.db, id).await?;
-    Ok(Json(serde_json::to_value(investors).unwrap()))
+    Ok(Json(
+        serde_json::to_value(investors).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn create_investment(
@@ -62,9 +71,10 @@ async fn create_investment(
     auth: AuthUser,
     Json(data): Json<CreateInvestment>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let investment =
-        investment_service::create_investment(&state.db, &auth.address, data).await?;
-    Ok(Json(serde_json::to_value(investment).unwrap()))
+    let investment = investment_service::create_investment(&state.db, &auth.address, data).await?;
+    Ok(Json(
+        serde_json::to_value(investment).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }
 
 async fn invest(
@@ -73,7 +83,8 @@ async fn invest(
     auth: AuthUser,
     Json(data): Json<CreateInvestmentEntry>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let investor =
-        investment_service::invest(&state.db, &auth.address, id, data.amount).await?;
-    Ok(Json(serde_json::to_value(investor).unwrap()))
+    let investor = investment_service::invest(&state.db, &auth.address, id, data.amount).await?;
+    Ok(Json(
+        serde_json::to_value(investor).map_err(|e| ApiError::Internal(e.into()))?,
+    ))
 }

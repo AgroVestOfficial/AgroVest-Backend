@@ -50,9 +50,16 @@ impl IndexerService {
 
     async fn sync_contract(&self, contract_address: &str) -> anyhow::Result<()> {
         let last_height = self.get_last_synced_height(contract_address).await?;
-        let events = self.soroban.get_events(contract_address, last_height, 100).await?;
+        let events = self
+            .soroban
+            .get_events(contract_address, last_height, 100)
+            .await?;
 
-        if let Some(events_arr) = events.get("result").and_then(|r| r.get("events")).and_then(|e| e.as_array()) {
+        if let Some(events_arr) = events
+            .get("result")
+            .and_then(|r| r.get("events"))
+            .and_then(|e| e.as_array())
+        {
             for event in events_arr {
                 if let Err(e) = self.process_event(contract_address, event).await {
                     tracing::warn!("Failed to process event: {:?}", e);
@@ -74,7 +81,11 @@ impl IndexerService {
         Ok(row.map(|r| r.0 as u64).unwrap_or(0))
     }
 
-    async fn process_event(&self, contract_address: &str, event: &serde_json::Value) -> anyhow::Result<()> {
+    async fn process_event(
+        &self,
+        contract_address: &str,
+        event: &serde_json::Value,
+    ) -> anyhow::Result<()> {
         // Parse event and update DB based on topic
         // This is a placeholder - actual implementation depends on Soroban event format
         let ledger = event.get("ledger").and_then(|l| l.as_u64()).unwrap_or(0);
