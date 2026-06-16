@@ -9,8 +9,7 @@ use crate::error::ApiError;
 use crate::middleware::auth::AuthUser;
 
 pub fn routes() -> Router<AppState> {
-    Router::new()
-        .route("/upload", post(upload_file))
+    Router::new().route("/upload", post(upload_file))
 }
 
 async fn upload_file(

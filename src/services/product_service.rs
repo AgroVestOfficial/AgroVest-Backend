@@ -28,15 +28,15 @@ pub async fn list_products(
         bind_idx += 1;
     }
 
-    query.push_str(&format!(" ORDER BY created_at DESC LIMIT ${} OFFSET ${}", bind_idx, bind_idx + 1));
+    query.push_str(&format!(
+        " ORDER BY created_at DESC LIMIT ${} OFFSET ${}",
+        bind_idx,
+        bind_idx + 1
+    ));
 
-    let total: (i64,) = sqlx::query_as(&count_query)
-        .fetch_one(pool)
-        .await?;
+    let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
 
-    let products = sqlx::query_as::<_, Product>(&query)
-        .fetch_all(pool)
-        .await?;
+    let products = sqlx::query_as::<_, Product>(&query).fetch_all(pool).await?;
 
     Ok(PaginatedResponse::new(
         products,
@@ -59,11 +59,10 @@ pub async fn get_farm_products(
     farm_id: i32,
     pagination: &PaginationParams,
 ) -> Result<PaginatedResponse<Product>, ApiError> {
-    let total: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM products WHERE farm_id = $1")
-            .bind(farm_id)
-            .fetch_one(pool)
-            .await?;
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM products WHERE farm_id = $1")
+        .bind(farm_id)
+        .fetch_one(pool)
+        .await?;
 
     let products = sqlx::query_as::<_, Product>(
         "SELECT * FROM products WHERE farm_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",

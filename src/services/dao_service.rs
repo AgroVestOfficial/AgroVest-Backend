@@ -90,11 +90,10 @@ pub async fn vote_on_proposal(
 }
 
 pub async fn list_challenges(pool: &PgPool) -> Result<Vec<Challenge>, ApiError> {
-    let challenges = sqlx::query_as::<_, Challenge>(
-        "SELECT * FROM challenges ORDER BY created_at DESC",
-    )
-    .fetch_all(pool)
-    .await?;
+    let challenges =
+        sqlx::query_as::<_, Challenge>("SELECT * FROM challenges ORDER BY created_at DESC")
+            .fetch_all(pool)
+            .await?;
     Ok(challenges)
 }
 
@@ -119,18 +118,13 @@ pub async fn create_challenge(
 }
 
 pub async fn list_disputes(pool: &PgPool) -> Result<Vec<Dispute>, ApiError> {
-    let disputes = sqlx::query_as::<_, Dispute>(
-        "SELECT * FROM disputes ORDER BY created_at DESC",
-    )
-    .fetch_all(pool)
-    .await?;
+    let disputes = sqlx::query_as::<_, Dispute>("SELECT * FROM disputes ORDER BY created_at DESC")
+        .fetch_all(pool)
+        .await?;
     Ok(disputes)
 }
 
-pub async fn create_dispute(
-    pool: &PgPool,
-    data: CreateDispute,
-) -> Result<Dispute, ApiError> {
+pub async fn create_dispute(pool: &PgPool, data: CreateDispute) -> Result<Dispute, ApiError> {
     sqlx::query_as::<_, Dispute>(
         r#"
         INSERT INTO disputes (challenge_id, arbitrator)

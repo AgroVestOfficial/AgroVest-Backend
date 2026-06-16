@@ -21,7 +21,10 @@ pub struct InvestmentQuery {
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/investments", get(list_investments).post(create_investment))
+        .route(
+            "/investments",
+            get(list_investments).post(create_investment),
+        )
         .route("/investments/{id}", get(get_investment))
         .route("/investments/{id}/investors", get(get_investors))
         .route("/investments/{id}/invest", post(invest))
@@ -62,8 +65,7 @@ async fn create_investment(
     auth: AuthUser,
     Json(data): Json<CreateInvestment>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let investment =
-        investment_service::create_investment(&state.db, &auth.address, data).await?;
+    let investment = investment_service::create_investment(&state.db, &auth.address, data).await?;
     Ok(Json(serde_json::to_value(investment).unwrap()))
 }
 
@@ -73,7 +75,6 @@ async fn invest(
     auth: AuthUser,
     Json(data): Json<CreateInvestmentEntry>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let investor =
-        investment_service::invest(&state.db, &auth.address, id, data.amount).await?;
+    let investor = investment_service::invest(&state.db, &auth.address, id, data.amount).await?;
     Ok(Json(serde_json::to_value(investor).unwrap()))
 }

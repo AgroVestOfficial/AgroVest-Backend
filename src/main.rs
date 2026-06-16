@@ -17,15 +17,25 @@ use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("agrovest_backend=info".parse()?))
+        .with_env_filter(
+            EnvFilter::from_default_env().add_directive("agrovest_backend=info".parse()?),
+        )
         .init();
 
     let config = AppConfig::from_env()?;
     let state = AppState::new(config).await?;
 
-    tracing::info!("Starting server on {}:{}", state.config.server_host, state.config.server_port);
+    tracing::info!(
+        "Starting server on {}:{}",
+        state.config.server_host,
+        state.config.server_port
+    );
 
-    let listener = tokio::net::TcpListener::bind(format!("{}:{}", state.config.server_host, state.config.server_port)).await?;
+    let listener = tokio::net::TcpListener::bind(format!(
+        "{}:{}",
+        state.config.server_host, state.config.server_port
+    ))
+    .await?;
 
     axum::serve(listener, build_router(state))
         .with_graceful_shutdown(shutdown_signal())
@@ -36,7 +46,9 @@ async fn main() -> anyhow::Result<()> {
 
 async fn shutdown_signal() {
     let ctrl_c = async {
-        tokio::signal::ctrl_c().await.expect("failed to install Ctrl+C handler");
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
     };
 
     #[cfg(unix)]

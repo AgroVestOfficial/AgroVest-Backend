@@ -25,7 +25,8 @@ impl AppConfig {
 
         Ok(Self {
             database_url: std::env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
-            redis_url: std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
+            redis_url: std::env::var("REDIS_URL")
+                .unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
             jwt_secret: std::env::var("JWT_SECRET").expect("JWT_SECRET must be set"),
             jwt_expiration_hours: std::env::var("JWT_EXPIRATION_HOURS")
                 .unwrap_or_else(|_| "24".into())
@@ -38,7 +39,8 @@ impl AppConfig {
             soroban_rpc_url: std::env::var("SOROBAN_RPC_URL")
                 .unwrap_or_else(|_| "https://soroban-testnet.stellar.org".into()),
             farm_contract_address: std::env::var("FARM_CONTRACT_ADDRESS").unwrap_or_default(),
-            investment_contract_address: std::env::var("INVESTMENT_CONTRACT_ADDRESS").unwrap_or_default(),
+            investment_contract_address: std::env::var("INVESTMENT_CONTRACT_ADDRESS")
+                .unwrap_or_default(),
             escrow_contract_address: std::env::var("ESCROW_CONTRACT_ADDRESS").unwrap_or_default(),
             dao_contract_address: std::env::var("DAO_CONTRACT_ADDRESS").unwrap_or_default(),
             indexer_poll_interval_secs: std::env::var("INDEXER_POLL_INTERVAL_SECS")

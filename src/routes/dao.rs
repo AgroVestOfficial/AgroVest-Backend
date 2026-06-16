@@ -73,9 +73,7 @@ async fn create_challenge(
     Ok(Json(serde_json::to_value(challenge).unwrap()))
 }
 
-async fn list_disputes(
-    State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+async fn list_disputes(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
     let disputes = dao_service::list_disputes(&state.db).await?;
     Ok(Json(serde_json::to_value(disputes).unwrap()))
 }

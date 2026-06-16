@@ -45,10 +45,7 @@ pub async fn get_investment(pool: &PgPool, id: i32) -> Result<Investment, ApiErr
         .ok_or(ApiError::NotFound)
 }
 
-pub async fn get_investors(
-    pool: &PgPool,
-    investment_id: i32,
-) -> Result<Vec<Investor>, ApiError> {
+pub async fn get_investors(pool: &PgPool, investment_id: i32) -> Result<Vec<Investor>, ApiError> {
     let investors = sqlx::query_as::<_, Investor>(
         "SELECT * FROM investors WHERE investment_id = $1 ORDER BY created_at DESC",
     )

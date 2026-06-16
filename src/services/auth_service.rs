@@ -49,12 +49,9 @@ pub async fn verify_and_issue_jwt(
         .map_err(|_| ApiError::BadRequest("Invalid signature hex".into()))?;
 
     // Verify Ed25519 signature
-    let valid = crate::utils::crypto::verify_stellar_signature(
-        address,
-        nonce.as_bytes(),
-        &signature_bytes,
-    )
-    .map_err(|e| ApiError::BadRequest(format!("Signature verification failed: {}", e)))?;
+    let valid =
+        crate::utils::crypto::verify_stellar_signature(address, nonce.as_bytes(), &signature_bytes)
+            .map_err(|e| ApiError::BadRequest(format!("Signature verification failed: {}", e)))?;
 
     if !valid {
         return Err(ApiError::Unauthorized);
@@ -67,8 +64,7 @@ pub async fn verify_and_issue_jwt(
         .map_err(|e| ApiError::Internal(e.into()))?;
 
     // Issue JWT
-    let exp = chrono::Utc::now()
-        + chrono::Duration::hours(expiration_hours as i64);
+    let exp = chrono::Utc::now() + chrono::Duration::hours(expiration_hours as i64);
     let claims = Claims {
         sub: address.to_string(),
         exp: exp.timestamp() as usize,

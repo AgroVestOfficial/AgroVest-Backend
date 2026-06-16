@@ -11,8 +11,10 @@ use crate::models::review::CreateReview;
 use crate::services::review_service;
 
 pub fn routes() -> Router<AppState> {
-    Router::new()
-        .route("/products/{product_id}/reviews", get(get_reviews).post(create_review))
+    Router::new().route(
+        "/products/{product_id}/reviews",
+        get(get_reviews).post(create_review),
+    )
 }
 
 async fn get_reviews(
