@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::blockchain::soroban_client::SorobanClient;
 use sqlx::PgPool;
 use std::sync::Arc;

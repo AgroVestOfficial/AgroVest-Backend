@@ -1,4 +1,5 @@
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct AppConfig {
     pub database_url: String,
     pub redis_url: String,

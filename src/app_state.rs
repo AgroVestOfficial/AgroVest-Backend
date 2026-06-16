@@ -7,6 +7,7 @@ pub struct AppState {
     pub db: sqlx::PgPool,
     pub redis: redis::aio::ConnectionManager,
     pub config: AppConfig,
+    #[allow(dead_code)]
     pub http_client: reqwest::Client,
     pub ipfs: IpfsService,
 }
