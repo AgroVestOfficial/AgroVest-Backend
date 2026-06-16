@@ -1,6 +1,6 @@
 use axum::{
     extract::{Multipart, State},
-    routing::{get, post},
+    routing::post,
     Json, Router,
 };
 
