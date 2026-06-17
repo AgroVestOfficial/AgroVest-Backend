@@ -9,6 +9,7 @@ use crate::error::ApiError;
 use crate::middleware::auth::AuthUser;
 use crate::models::review::CreateReview;
 use crate::services::review_service;
+use crate::utils::validators::ValidJson;
 
 pub fn routes() -> Router<AppState> {
     Router::new().route(
@@ -31,7 +32,7 @@ async fn create_review(
     State(state): State<AppState>,
     Path(product_id): Path<i32>,
     auth: AuthUser,
-    Json(data): Json<CreateReview>,
+    ValidJson(data): ValidJson<CreateReview>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let review = review_service::create_review(&state.db, &auth.address, product_id, data).await?;
     Ok(Json(

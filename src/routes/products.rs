@@ -10,6 +10,7 @@ use crate::middleware::auth::AuthUser;
 use crate::models::product::{CreateProduct, ProductFilter, UpdateProduct};
 use crate::services::product_service;
 use crate::utils::pagination::PaginationParams;
+use crate::utils::validators::ValidJson;
 
 #[derive(serde::Deserialize)]
 pub struct ProductQuery {
@@ -70,7 +71,7 @@ async fn get_farm_products(
 async fn create_product(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(data): Json<CreateProduct>,
+    ValidJson(data): ValidJson<CreateProduct>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let product = product_service::create_product(&state.db, &auth.address, data).await?;
     Ok(Json(
@@ -82,7 +83,7 @@ async fn update_product(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     auth: AuthUser,
-    Json(data): Json<UpdateProduct>,
+    ValidJson(data): ValidJson<UpdateProduct>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let product = product_service::update_product(&state.db, id, &auth.address, data).await?;
     Ok(Json(

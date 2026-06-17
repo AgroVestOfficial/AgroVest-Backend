@@ -12,6 +12,7 @@ use crate::models::dispute::CreateDispute;
 use crate::models::proposal::{CreateProposal, VoteRequest};
 use crate::services::dao_service;
 use crate::utils::pagination::PaginationParams;
+use crate::utils::validators::ValidJson;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -45,7 +46,7 @@ async fn get_proposal(
 async fn create_proposal(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(data): Json<CreateProposal>,
+    ValidJson(data): ValidJson<CreateProposal>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let proposal = dao_service::create_proposal(&state.db, &auth.address, data).await?;
     Ok(Json(
@@ -57,7 +58,7 @@ async fn vote_proposal(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     auth: AuthUser,
-    Json(data): Json<VoteRequest>,
+    ValidJson(data): ValidJson<VoteRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let vote = dao_service::vote_on_proposal(&state.db, &auth.address, id, &data.vote).await?;
     Ok(Json(
@@ -77,7 +78,7 @@ async fn list_challenges(
 async fn create_challenge(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(data): Json<CreateChallenge>,
+    ValidJson(data): ValidJson<CreateChallenge>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let challenge = dao_service::create_challenge(&state.db, &auth.address, data).await?;
     Ok(Json(
@@ -94,7 +95,7 @@ async fn list_disputes(State(state): State<AppState>) -> Result<Json<serde_json:
 
 async fn create_dispute(
     State(state): State<AppState>,
-    Json(data): Json<CreateDispute>,
+    ValidJson(data): ValidJson<CreateDispute>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let dispute = dao_service::create_dispute(&state.db, data).await?;
     Ok(Json(
