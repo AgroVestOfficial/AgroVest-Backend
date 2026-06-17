@@ -14,6 +14,10 @@ pub struct Review {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreateReview {
-    #[validate(length(min = 1, max = 5000, message = "Review text must be between 1 and 5000 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 5000,
+        message = "Review text must be between 1 and 5000 characters"
+    ))]
     pub review_text: String,
 }

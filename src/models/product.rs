@@ -21,16 +21,26 @@ pub struct Product {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreateProduct {
-    #[validate(length(min = 1, max = 255, message = "Product name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Product name must be between 1 and 255 characters"
+    ))]
     pub product_name: String,
 
     #[validate(url(message = "Product image must be a valid URL"))]
     pub product_image: Option<String>,
 
-    #[validate(length(max = 5000, message = "Product description must not exceed 5000 characters"))]
+    #[validate(length(
+        max = 5000,
+        message = "Product description must not exceed 5000 characters"
+    ))]
     pub product_description: Option<String>,
 
-    #[validate(range(min = 1, message = "Product price must be positive (at least 1 cent in smallest unit)"))]
+    #[validate(range(
+        min = 1,
+        message = "Product price must be positive (at least 1 cent in smallest unit)"
+    ))]
     pub product_price: i64,
 
     pub farm_id: Option<i32>,
@@ -41,16 +51,26 @@ pub struct CreateProduct {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct UpdateProduct {
-    #[validate(length(min = 1, max = 255, message = "Product name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Product name must be between 1 and 255 characters"
+    ))]
     pub product_name: Option<String>,
 
     #[validate(url(message = "Product image must be a valid URL"))]
     pub product_image: Option<String>,
 
-    #[validate(length(max = 5000, message = "Product description must not exceed 5000 characters"))]
+    #[validate(length(
+        max = 5000,
+        message = "Product description must not exceed 5000 characters"
+    ))]
     pub product_description: Option<String>,
 
-    #[validate(range(min = 1, message = "Product price must be positive (at least 1 cent in smallest unit)"))]
+    #[validate(range(
+        min = 1,
+        message = "Product price must be positive (at least 1 cent in smallest unit)"
+    ))]
     pub product_price: Option<i64>,
 
     #[validate(length(max = 100, message = "Category must not exceed 100 characters"))]

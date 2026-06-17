@@ -1,8 +1,8 @@
+use crate::utils::validators::validate_stellar_address;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
-use crate::utils::validators::validate_stellar_address;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::Type, Clone)]
 #[sqlx(type_name = "escrow_status", rename_all = "snake_case")]
@@ -28,7 +28,10 @@ pub struct Escrow {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreateEscrow {
-    #[validate(custom(function = "validate_stellar_address", message = "Invalid Stellar address format"))]
+    #[validate(custom(
+        function = "validate_stellar_address",
+        message = "Invalid Stellar address format"
+    ))]
     pub farmer: String,
 
     #[validate(range(min = 1, message = "Escrow amount must be positive"))]

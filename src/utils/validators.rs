@@ -22,12 +22,12 @@ pub fn validate_stellar_address(address: &str) -> Result<(), validator::Validati
 /// Allows a small grace period (300 seconds / 5 minutes) for clock skew
 pub fn validate_future_timestamp(timestamp: i64) -> Result<(), validator::ValidationError> {
     use std::time::{SystemTime, UNIX_EPOCH};
-    
+
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs() as i64;
-    
+
     // Allow 5 minutes grace period for clock skew
     if timestamp <= now - 300 {
         return Err(validator::ValidationError::new("future_timestamp"));
@@ -48,18 +48,16 @@ where
     type Rejection = Response;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let Json(value) = Json::<T>::from_request(req, state)
-            .await
-            .map_err(|err| {
-                let error_msg = format!("Invalid JSON: {}", err);
-                let body = Json(json!({
-                    "error": {
-                        "code": StatusCode::BAD_REQUEST.as_u16(),
-                        "message": error_msg,
-                    }
-                }));
-                (StatusCode::BAD_REQUEST, body).into_response()
-            })?;
+        let Json(value) = Json::<T>::from_request(req, state).await.map_err(|err| {
+            let error_msg = format!("Invalid JSON: {}", err);
+            let body = Json(json!({
+                "error": {
+                    "code": StatusCode::BAD_REQUEST.as_u16(),
+                    "message": error_msg,
+                }
+            }));
+            (StatusCode::BAD_REQUEST, body).into_response()
+        })?;
 
         value.validate().map_err(|err| {
             let error_msg = format!("Validation error: {}", err);
@@ -116,7 +114,8 @@ mod tests {
         let future = (SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
-            .as_secs() + 86400) as i64; // 1 day in the future
+            .as_secs()
+            + 86400) as i64; // 1 day in the future
         assert!(validate_future_timestamp(future).is_ok());
     }
 }

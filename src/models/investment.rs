@@ -32,16 +32,26 @@ pub struct CreateInvestment {
     #[validate(url(message = "Image must be a valid URL"))]
     pub image: Option<String>,
 
-    #[validate(length(min = 1, max = 255, message = "Investment name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Investment name must be between 1 and 255 characters"
+    ))]
     pub name: String,
 
-    #[validate(length(max = 5000, message = "Investment description must not exceed 5000 characters"))]
+    #[validate(length(
+        max = 5000,
+        message = "Investment description must not exceed 5000 characters"
+    ))]
     pub about: Option<String>,
 
     #[validate(range(min = 1, message = "Minimum investment amount must be positive"))]
     pub min_amount: i64,
 
-    #[validate(custom(function = "validate_future_timestamp", message = "End date must be in the future"))]
+    #[validate(custom(
+        function = "validate_future_timestamp",
+        message = "End date must be in the future"
+    ))]
     pub end_date: i64,
 }
 

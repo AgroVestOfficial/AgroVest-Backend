@@ -26,22 +26,39 @@ pub struct Proposal {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreateProposal {
-    #[validate(length(min = 1, max = 500, message = "Proposal title must be between 1 and 500 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 500,
+        message = "Proposal title must be between 1 and 500 characters"
+    ))]
     pub title: String,
 
-    #[validate(length(max = 5000, message = "Proposal description must not exceed 5000 characters"))]
+    #[validate(length(
+        max = 5000,
+        message = "Proposal description must not exceed 5000 characters"
+    ))]
     pub description: Option<String>,
 
-    #[validate(range(min = 1, message = "Required votes must be at least 1 to ensure valid quorum"))]
+    #[validate(range(
+        min = 1,
+        message = "Required votes must be at least 1 to ensure valid quorum"
+    ))]
     pub required_votes: i64,
 
-    #[validate(custom(function = "validate_future_timestamp", message = "Proposal end date must be in the future"))]
+    #[validate(custom(
+        function = "validate_future_timestamp",
+        message = "Proposal end date must be in the future"
+    ))]
     pub ends_at: i64,
 }
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct VoteRequest {
-    #[validate(length(min = 1, max = 50, message = "Vote must be between 1 and 50 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 50,
+        message = "Vote must be between 1 and 50 characters"
+    ))]
     pub vote: String,
 }
 
@@ -51,7 +68,11 @@ pub struct ExecuteProposal {
     #[validate(range(min = 1, message = "Farm ID must be positive"))]
     pub farm_id: i32,
 
-    #[validate(length(min = 1, max = 255, message = "Name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Name must be between 1 and 255 characters"
+    ))]
     pub name: String,
 
     #[validate(length(max = 5000, message = "Description must not exceed 5000 characters"))]
@@ -60,7 +81,10 @@ pub struct ExecuteProposal {
     #[validate(range(min = 1, message = "Minimum amount must be positive"))]
     pub min_amount: i64,
 
-    #[validate(custom(function = "validate_future_timestamp", message = "End date must be in the future"))]
+    #[validate(custom(
+        function = "validate_future_timestamp",
+        message = "End date must be in the future"
+    ))]
     pub end_date: i64,
 }
 

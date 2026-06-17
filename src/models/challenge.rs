@@ -19,7 +19,10 @@ pub struct CreateChallenge {
     #[validate(range(min = 1, message = "Proposal ID must be positive"))]
     pub proposal_id: i32,
 
-    #[validate(length(max = 5000, message = "Challenge description must not exceed 5000 characters"))]
+    #[validate(length(
+        max = 5000,
+        message = "Challenge description must not exceed 5000 characters"
+    ))]
     pub description: Option<String>,
 }
 

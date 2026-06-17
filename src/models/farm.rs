@@ -20,13 +20,20 @@ pub struct Farm {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreateFarm {
-    #[validate(length(min = 1, max = 255, message = "Business name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Business name must be between 1 and 255 characters"
+    ))]
     pub business_name: String,
 
     #[validate(url(message = "Business image must be a valid URL"))]
     pub business_image: Option<String>,
 
-    #[validate(length(max = 500, message = "Business location must not exceed 500 characters"))]
+    #[validate(length(
+        max = 500,
+        message = "Business location must not exceed 500 characters"
+    ))]
     pub business_location: Option<String>,
 
     #[validate(length(max = 255, message = "Business contact must not exceed 255 characters"))]
@@ -38,13 +45,20 @@ pub struct CreateFarm {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct UpdateFarm {
-    #[validate(length(min = 1, max = 255, message = "Business name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Business name must be between 1 and 255 characters"
+    ))]
     pub business_name: Option<String>,
 
     #[validate(url(message = "Business image must be a valid URL"))]
     pub business_image: Option<String>,
 
-    #[validate(length(max = 500, message = "Business location must not exceed 500 characters"))]
+    #[validate(length(
+        max = 500,
+        message = "Business location must not exceed 500 characters"
+    ))]
     pub business_location: Option<String>,
 
     #[validate(length(max = 255, message = "Business contact must not exceed 255 characters"))]

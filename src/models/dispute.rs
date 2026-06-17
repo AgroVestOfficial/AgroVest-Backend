@@ -1,8 +1,8 @@
+use crate::utils::validators::validate_stellar_address;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
-use crate::utils::validators::validate_stellar_address;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Dispute {
@@ -20,7 +20,10 @@ pub struct CreateDispute {
     #[validate(range(min = 1, message = "Challenge ID must be positive"))]
     pub challenge_id: i32,
 
-    #[validate(custom(function = "validate_stellar_address", message = "Invalid Stellar address format"))]
+    #[validate(custom(
+        function = "validate_stellar_address",
+        message = "Invalid Stellar address format"
+    ))]
     pub arbitrator: String,
 }
 

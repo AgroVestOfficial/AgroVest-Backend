@@ -10,11 +10,14 @@ use crate::app_state::AppState;
 use crate::error::ApiError;
 use crate::middleware::auth::AuthUser;
 use crate::services::{auth_service, user_service};
-use crate::utils::validators::{ValidJson, validate_stellar_address};
+use crate::utils::validators::{validate_stellar_address, ValidJson};
 
 #[derive(Deserialize, Validate)]
 pub struct NonceRequest {
-    #[validate(custom(function = "validate_stellar_address", message = "Invalid Stellar address format. Address must be 56 characters long and start with 'G'"))]
+    #[validate(custom(
+        function = "validate_stellar_address",
+        message = "Invalid Stellar address format. Address must be 56 characters long and start with 'G'"
+    ))]
     pub address: String,
 }
 
@@ -25,7 +28,10 @@ pub struct NonceResponse {
 
 #[derive(Deserialize, Validate)]
 pub struct VerifyRequest {
-    #[validate(custom(function = "validate_stellar_address", message = "Invalid Stellar address format"))]
+    #[validate(custom(
+        function = "validate_stellar_address",
+        message = "Invalid Stellar address format"
+    ))]
     pub address: String,
 
     #[validate(length(min = 1, message = "Signature must not be empty"))]
