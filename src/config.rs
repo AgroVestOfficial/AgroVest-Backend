@@ -1,3 +1,5 @@
+use anyhow::Context;
+
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
 pub struct AppConfig {
@@ -25,10 +27,12 @@ impl AppConfig {
         dotenvy::dotenv().ok();
 
         Ok(Self {
-            database_url: std::env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
+            database_url: std::env::var("DATABASE_URL")
+                .context("DATABASE_URL environment variable must be set")?,
             redis_url: std::env::var("REDIS_URL")
                 .unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
-            jwt_secret: std::env::var("JWT_SECRET").expect("JWT_SECRET must be set"),
+            jwt_secret: std::env::var("JWT_SECRET")
+                .context("JWT_SECRET environment variable must be set")?,
             jwt_expiration_hours: std::env::var("JWT_EXPIRATION_HOURS")
                 .unwrap_or_else(|_| "24".into())
                 .parse()?,
