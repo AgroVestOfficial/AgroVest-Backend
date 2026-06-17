@@ -1,3 +1,5 @@
+Closes #(issue number)
+
 ## Description
 
 <!-- What does this PR do? Why is it needed? Reference the issue: Closes #123 -->
