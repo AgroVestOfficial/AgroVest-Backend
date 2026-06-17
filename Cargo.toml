@@ -33,3 +33,10 @@ uuid = { version = "1", features = ["v4", "serde"] }
 thiserror = "2"
 anyhow = "1"
 validator = { version = "0.18", features = ["derive"] }
+
+[dev-dependencies]
+# `ServiceExt::oneshot` (drive the router in integration tests) lives behind tower's "util" feature.
+tower = { version = "0.4", features = ["util"] }
+# `sqlx::migrate!` (apply migrations to the test database) needs the "migrate" feature,
+# which the production binary does not require (migrations are run via sqlx-cli).
+sqlx = { version = "0.8", features = ["migrate"] }

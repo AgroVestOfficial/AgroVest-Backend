@@ -124,7 +124,52 @@ pub async fn list_disputes(pool: &PgPool) -> Result<Vec<Dispute>, ApiError> {
     Ok(disputes)
 }
 
-pub async fn create_dispute(pool: &PgPool, data: CreateDispute) -> Result<Dispute, ApiError> {
+pub async fn create_dispute(
+    pool: &PgPool,
+    disputer: &str,
+    data: CreateDispute,
+) -> Result<Dispute, ApiError> {
+    // 1. The challenge must exist.
+    let challenge = sqlx::query_as::<_, Challenge>("SELECT * FROM challenges WHERE id = $1")
+        .bind(data.challenge_id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    // 2. Load the parent proposal so we can authorize the proposer as well.
+    //    The FK on challenges.proposal_id guarantees this row exists.
+    let proposal = sqlx::query_as::<_, Proposal>("SELECT * FROM proposals WHERE id = $1")
+        .bind(challenge.proposal_id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    // 3. Authorization: the disputer must be a party to the challenge —
+    //    either the challenger who raised it or the proposer being challenged.
+    if disputer != challenge.challenger && disputer != proposal.proposer {
+        return Err(ApiError::Forbidden);
+    }
+
+    // 4. A resolved challenge cannot be disputed.
+    if challenge.resolved {
+        return Err(ApiError::BadRequest(
+            "Cannot dispute a resolved challenge".to_string(),
+        ));
+    }
+
+    // 5. Only one dispute is allowed per challenge.
+    let existing = sqlx::query_as::<_, Dispute>("SELECT * FROM disputes WHERE challenge_id = $1")
+        .bind(data.challenge_id)
+        .fetch_optional(pool)
+        .await?;
+    if existing.is_some() {
+        return Err(ApiError::Conflict(
+            "A dispute already exists for this challenge".to_string(),
+        ));
+    }
+
+    // 6. Create the dispute, binding the arbitrator from the authenticated
+    //    user rather than the request body.
     sqlx::query_as::<_, Dispute>(
         r#"
         INSERT INTO disputes (challenge_id, arbitrator)
@@ -133,7 +178,7 @@ pub async fn create_dispute(pool: &PgPool, data: CreateDispute) -> Result<Disput
         "#,
     )
     .bind(data.challenge_id)
-    .bind(&data.arbitrator)
+    .bind(disputer)
     .fetch_one(pool)
     .await
     .map_err(ApiError::Database)
