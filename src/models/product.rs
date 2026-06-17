@@ -63,3 +63,89 @@ pub struct ProductFilter {
     pub farm_id: Option<i32>,
     pub sold: Option<bool>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_negative_price_rejected() {
+        let product = CreateProduct {
+            product_name: "Test Product".to_string(),
+            product_image: Some("https://example.com/image.jpg".to_string()),
+            product_description: Some("A test product".to_string()),
+            product_price: -100,
+            farm_id: Some(1),
+            category: Some("Vegetables".to_string()),
+        };
+        assert!(
+            product.validate().is_err(),
+            "Scenario A: Negative prices must be rejected"
+        );
+    }
+
+    #[test]
+    fn test_zero_price_rejected() {
+        let product = CreateProduct {
+            product_name: "Test Product".to_string(),
+            product_image: Some("https://example.com/image.jpg".to_string()),
+            product_description: Some("A test product".to_string()),
+            product_price: 0,
+            farm_id: Some(1),
+            category: Some("Vegetables".to_string()),
+        };
+        assert!(
+            product.validate().is_err(),
+            "Scenario A: Zero prices must be rejected"
+        );
+    }
+
+    #[test]
+    fn test_positive_price_accepted() {
+        let product = CreateProduct {
+            product_name: "Test Product".to_string(),
+            product_image: Some("https://example.com/image.jpg".to_string()),
+            product_description: Some("A test product".to_string()),
+            product_price: 5000,
+            farm_id: Some(1),
+            category: Some("Vegetables".to_string()),
+        };
+        assert!(
+            product.validate().is_ok(),
+            "Scenario A: Valid positive prices must be accepted"
+        );
+    }
+
+    #[test]
+    fn test_unbounded_string_rejected() {
+        let long_name = "A".repeat(256);
+        let product = CreateProduct {
+            product_name: long_name,
+            product_image: Some("https://example.com/image.jpg".to_string()),
+            product_description: None,
+            product_price: 100,
+            farm_id: Some(1),
+            category: None,
+        };
+        assert!(
+            product.validate().is_err(),
+            "Scenario D: Unbounded strings must be rejected (max 255 chars)"
+        );
+    }
+
+    #[test]
+    fn test_valid_product_structure() {
+        let product = CreateProduct {
+            product_name: "Organic Tomatoes".to_string(),
+            product_image: Some("https://example.com/tomato.jpg".to_string()),
+            product_description: Some("Fresh organic tomatoes from the farm".to_string()),
+            product_price: 5000,
+            farm_id: Some(1),
+            category: Some("Vegetables".to_string()),
+        };
+        assert!(
+            product.validate().is_ok(),
+            "Valid products must pass all validation rules"
+        );
+    }
+}

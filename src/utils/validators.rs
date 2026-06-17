@@ -9,8 +9,6 @@ use serde::de::DeserializeOwned;
 use serde_json::json;
 use validator::Validate;
 
-use crate::error::ApiError;
-
 /// Custom validator for Stellar addresses
 /// Stellar addresses are 56 characters long and start with 'G'
 pub fn validate_stellar_address(address: &str) -> Result<(), validator::ValidationError> {
@@ -22,6 +20,7 @@ pub fn validate_stellar_address(address: &str) -> Result<(), validator::Validati
 
 /// Custom validator for timestamps - must be greater than current Unix timestamp (in seconds)
 /// Allows a small grace period (300 seconds / 5 minutes) for clock skew
+#[allow(dead_code)]
 pub fn validate_future_timestamp(timestamp: &i64) -> Result<(), validator::ValidationError> {
     use std::time::{SystemTime, UNIX_EPOCH};
     
@@ -33,14 +32,6 @@ pub fn validate_future_timestamp(timestamp: &i64) -> Result<(), validator::Valid
     // Allow 5 minutes grace period for clock skew
     if timestamp <= &(now - 300) {
         return Err(validator::ValidationError::new("future_timestamp"));
-    }
-    Ok(())
-}
-
-/// Custom validator for email addresses (basic format check)
-pub fn validate_email(email: &str) -> Result<(), validator::ValidationError> {
-    if email.is_empty() || !email.contains('@') || !email.contains('.') {
-        return Err(validator::ValidationError::new("invalid_email"));
     }
     Ok(())
 }
