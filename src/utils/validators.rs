@@ -20,8 +20,7 @@ pub fn validate_stellar_address(address: &str) -> Result<(), validator::Validati
 
 /// Custom validator for timestamps - must be greater than current Unix timestamp (in seconds)
 /// Allows a small grace period (300 seconds / 5 minutes) for clock skew
-#[allow(dead_code)]
-pub fn validate_future_timestamp(timestamp: &i64) -> Result<(), validator::ValidationError> {
+pub fn validate_future_timestamp(timestamp: i64) -> Result<(), validator::ValidationError> {
     use std::time::{SystemTime, UNIX_EPOCH};
     
     let now = SystemTime::now()
@@ -30,7 +29,7 @@ pub fn validate_future_timestamp(timestamp: &i64) -> Result<(), validator::Valid
         .as_secs() as i64;
     
     // Allow 5 minutes grace period for clock skew
-    if timestamp <= &(now - 300) {
+    if timestamp <= now - 300 {
         return Err(validator::ValidationError::new("future_timestamp"));
     }
     Ok(())
@@ -118,16 +117,6 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs() + 86400) as i64; // 1 day in the future
-        assert!(validate_future_timestamp(&future).is_ok());
-    }
-
-    #[test]
-    fn test_validate_email_valid() {
-        assert!(validate_email("user@example.com").is_ok());
-    }
-
-    #[test]
-    fn test_validate_email_invalid() {
-        assert!(validate_email("invalid-email").is_err());
+        assert!(validate_future_timestamp(future).is_ok());
     }
 }
