@@ -1,12 +1,9 @@
-use axum::{
-    async_trait,
-    extract::FromRequestParts,
-    http::{request::Parts, StatusCode},
-};
+use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::AppState;
+use crate::error::ApiError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -20,7 +17,7 @@ pub struct AuthUser {
 
 #[async_trait]
 impl FromRequestParts<AppState> for AuthUser {
-    type Rejection = StatusCode;
+    type Rejection = ApiError;
 
     async fn from_request_parts(
         parts: &mut Parts,
@@ -30,18 +27,18 @@ impl FromRequestParts<AppState> for AuthUser {
             .headers
             .get("authorization")
             .and_then(|v| v.to_str().ok())
-            .ok_or(StatusCode::UNAUTHORIZED)?;
+            .ok_or(ApiError::Unauthorized)?;
 
         let token = auth_header
             .strip_prefix("Bearer ")
-            .ok_or(StatusCode::UNAUTHORIZED)?;
+            .ok_or(ApiError::Unauthorized)?;
 
         let token_data = decode::<Claims>(
             token,
             &DecodingKey::from_secret(state.config.jwt_secret.as_bytes()),
             &Validation::new(Algorithm::HS256),
         )
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+        .map_err(|_| ApiError::Unauthorized)?;
 
         Ok(AuthUser {
             address: token_data.claims.sub,
