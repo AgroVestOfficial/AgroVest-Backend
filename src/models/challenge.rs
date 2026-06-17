@@ -20,6 +20,7 @@ pub struct CreateChallenge {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ResolveChallenge {
     pub valid: bool,
 }

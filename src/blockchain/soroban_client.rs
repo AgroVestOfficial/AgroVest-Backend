@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub struct SorobanClient {
     rpc_url: String,
     http_client: reqwest::Client,

@@ -22,6 +22,7 @@ pub enum ApiError {
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
     #[error("Blockchain error: {0}")]
+    #[allow(dead_code)]
     Blockchain(String),
 }
 

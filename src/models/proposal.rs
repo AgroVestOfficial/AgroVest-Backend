@@ -35,6 +35,7 @@ pub struct VoteRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ExecuteProposal {
     pub farm_id: i32,
     pub name: String,
