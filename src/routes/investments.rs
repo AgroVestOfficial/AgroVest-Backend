@@ -11,6 +11,7 @@ use crate::models::investment::CreateInvestment;
 use crate::models::investor::CreateInvestmentEntry;
 use crate::services::investment_service;
 use crate::utils::pagination::PaginationParams;
+use crate::utils::validators::ValidJson;
 
 #[derive(serde::Deserialize)]
 pub struct InvestmentQuery {
@@ -69,7 +70,7 @@ async fn get_investors(
 async fn create_investment(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(data): Json<CreateInvestment>,
+    ValidJson(data): ValidJson<CreateInvestment>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let investment = investment_service::create_investment(&state.db, &auth.address, data).await?;
     Ok(Json(
@@ -81,7 +82,7 @@ async fn invest(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     auth: AuthUser,
-    Json(data): Json<CreateInvestmentEntry>,
+    ValidJson(data): ValidJson<CreateInvestmentEntry>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let investor = investment_service::invest(&state.db, &auth.address, id, data.amount).await?;
     Ok(Json(

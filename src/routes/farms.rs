@@ -10,6 +10,7 @@ use crate::middleware::auth::AuthUser;
 use crate::models::farm::{CreateFarm, UpdateFarm};
 use crate::services::{farm_service, user_service};
 use crate::utils::pagination::PaginationParams;
+use crate::utils::validators::ValidJson;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -51,7 +52,7 @@ async fn get_farm_by_address(
 async fn create_farm(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(data): Json<CreateFarm>,
+    ValidJson(data): ValidJson<CreateFarm>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     user_service::upsert_user(&state.db, &auth.address).await?;
     let farm = farm_service::create_farm(&state.db, &auth.address, data).await?;
@@ -64,7 +65,7 @@ async fn update_farm(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     auth: AuthUser,
-    Json(data): Json<UpdateFarm>,
+    ValidJson(data): ValidJson<UpdateFarm>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let farm = farm_service::update_farm(&state.db, id, &auth.address, data).await?;
     Ok(Json(

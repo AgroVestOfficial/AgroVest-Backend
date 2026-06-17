@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use validator::Validate;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Investment {
@@ -21,12 +22,23 @@ pub struct Investment {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct CreateInvestment {
+    #[validate(range(min = 1, message = "Farm ID must be positive"))]
     pub farm_id: i32,
+
+    #[validate(url(message = "Image must be a valid URL"))]
     pub image: Option<String>,
+
+    #[validate(length(min = 1, max = 255, message = "Investment name must be between 1 and 255 characters"))]
     pub name: String,
+
+    #[validate(length(max = 5000, message = "Investment description must not exceed 5000 characters"))]
     pub about: Option<String>,
+
+    #[validate(range(min = 1, message = "Minimum investment amount must be positive"))]
     pub min_amount: i64,
+
+    #[validate(range(min = 1000000000, message = "End date must be in the future (Unix timestamp >= 1000000000)"))]
     pub end_date: i64,
 }

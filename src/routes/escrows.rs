@@ -10,6 +10,7 @@ use crate::middleware::auth::AuthUser;
 use crate::models::escrow::{CreateEscrow, EscrowFilter, EscrowStatus};
 use crate::services::escrow_service;
 use crate::utils::pagination::PaginationParams;
+use crate::utils::validators::ValidJson;
 
 #[derive(serde::Deserialize)]
 pub struct EscrowQuery {
@@ -60,7 +61,7 @@ async fn get_escrow(
 async fn create_escrow(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(data): Json<CreateEscrow>,
+    ValidJson(data): ValidJson<CreateEscrow>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let escrow = escrow_service::create_escrow(&state.db, &auth.address, data).await?;
     Ok(Json(

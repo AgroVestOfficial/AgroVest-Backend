@@ -4,14 +4,17 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 use crate::app_state::AppState;
 use crate::error::ApiError;
 use crate::middleware::auth::AuthUser;
 use crate::services::{auth_service, user_service};
+use crate::utils::validators::{ValidJson, validate_stellar_address};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct NonceRequest {
+    #[validate(custom(function = "validate_stellar_address", message = "Invalid Stellar address format. Address must be 56 characters long and start with 'G'"))]
     pub address: String,
 }
 
@@ -20,9 +23,12 @@ pub struct NonceResponse {
     pub nonce: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct VerifyRequest {
+    #[validate(custom(function = "validate_stellar_address", message = "Invalid Stellar address format"))]
     pub address: String,
+
+    #[validate(length(min = 1, message = "Signature must not be empty"))]
     pub signature: String,
 }
 
@@ -45,7 +51,7 @@ pub fn routes() -> Router<AppState> {
 
 async fn get_nonce(
     State(mut state): State<AppState>,
-    Json(req): Json<NonceRequest>,
+    ValidJson(req): ValidJson<NonceRequest>,
 ) -> Result<Json<NonceResponse>, ApiError> {
     let nonce = auth_service::generate_nonce(&mut state.redis, &req.address).await?;
     Ok(Json(NonceResponse { nonce }))
@@ -53,7 +59,7 @@ async fn get_nonce(
 
 async fn verify_signature(
     State(mut state): State<AppState>,
-    Json(req): Json<VerifyRequest>,
+    ValidJson(req): ValidJson<VerifyRequest>,
 ) -> Result<Json<TokenResponse>, ApiError> {
     let token = auth_service::verify_and_issue_jwt(
         &mut state.redis,
