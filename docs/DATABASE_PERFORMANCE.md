@@ -37,16 +37,6 @@ The following indexes were identified in issue #7 but **deferred** until corresp
 
 These indexes will be added in future migrations when the corresponding query patterns are implemented to avoid premature optimization and unnecessary write overhead.
 
-## Existing Indexes (Pre-Migration 014)
-
-### Already Optimized Tables
-
-| Table | Existing Indexes | Coverage |
-|-------|------------------|----------|
-| `escrows` | `idx_escrows_buyer`, `idx_escrows_farmer` | User role-based filtering ✅ |
-| `investments` | `idx_investments_farm`, `idx_investments_active` | Farm-based and active filtering ✅ |
-| `products` | `idx_products_owner`, `idx_products_farm`, `idx_products_category` | Ownership, farm, and category filtering ✅ |
-
 ## Query Performance Analysis
 
 ### Expected Performance Improvements
