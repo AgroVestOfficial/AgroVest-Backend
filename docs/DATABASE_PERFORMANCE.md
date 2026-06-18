@@ -10,13 +10,32 @@ This document outlines the database indexes and performance optimizations implem
 
 | Table | Column | Index Name | Query Pattern | Performance Impact |
 |-------|--------|------------|---------------|-------------------|
-| `proposals` | `proposer` | `idx_proposals_proposer` | User's proposal listings | Eliminates full table scan for user-specific proposals |
-| `challenges` | `proposal_id` | `idx_challenges_proposal_id` | Proposal→Challenge JOINs | Accelerates proposal detail views with challenges |
-| `disputes` | `challenge_id` | `idx_disputes_challenge_id` | Challenge→Dispute JOINs | Speeds up dispute resolution workflows |
-| `votes` | `voter` | `idx_votes_voter` | User voting history | Enables fast user vote lookups and verification |
 | `escrows` | `status` | `idx_escrows_status` | Status filtering in listings | Critical for escrow dashboard analytics |
 | `products` | `sold` | `idx_products_sold` | Marketplace availability | Essential for product inventory management |
-| `investments` | `owner` | `idx_investments_owner` | Ownership verification | Optimizes user investment portfolio queries |
+
+## Existing Indexes (Pre-Migration 014)
+
+### Already Optimized Tables
+
+| Table | Existing Indexes | Coverage |
+|-------|------------------|----------|
+| `escrows` | `idx_escrows_buyer`, `idx_escrows_farmer` | User role-based filtering ✅ |
+| `investments` | `idx_investments_farm`, `idx_investments_active` | Farm-based and active filtering ✅ |
+| `products` | `idx_products_owner`, `idx_products_farm`, `idx_products_category` | Ownership, farm, and category filtering ✅ |
+
+## Deferred Indexes
+
+The following indexes were identified in issue #7 but **deferred** until corresponding queries are implemented:
+
+| Table | Column | Index Name | Reason for Deferral |
+|-------|--------|------------|-------------------|
+| `proposals` | `proposer` | `idx_proposals_proposer` | No SELECT queries filter by proposer in current codebase |
+| `challenges` | `proposal_id` | `idx_challenges_proposal_id` | No SELECT queries filter by proposal_id in current codebase |
+| `disputes` | `challenge_id` | `idx_disputes_challenge_id` | No SELECT queries filter by challenge_id in current codebase |
+| `votes` | `voter` | `idx_votes_voter` | No SELECT queries filter by voter in current codebase |
+| `investments` | `owner` | `idx_investments_owner` | No SELECT queries filter by owner in current codebase |
+
+These indexes will be added in future migrations when the corresponding query patterns are implemented to avoid premature optimization and unnecessary write overhead.
 
 ## Existing Indexes (Pre-Migration 014)
 
@@ -47,22 +66,7 @@ SELECT * FROM escrows WHERE status = 'awaiting_approval';
 -- Expected: Index scan with significant improvement for large datasets
 ```
 
-#### 2. User Proposal Lookups
-**Before Index:**
-```sql
--- Full table scan to find user's proposals
-SELECT * FROM proposals WHERE proposer = 'GAB...XYZ';
--- Expected: Sequential scan through entire proposals table
-```
-
-**After Index (`idx_proposals_proposer`):**
-```sql
--- Direct index lookup
-SELECT * FROM proposals WHERE proposer = 'GAB...XYZ';
--- Expected: B-tree index lookup, logarithmic time complexity
-```
-
-#### 3. Marketplace Product Filtering
+#### 2. Marketplace Product Filtering
 **Before Index:**
 ```sql
 -- Full scan to find available products
