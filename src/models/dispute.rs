@@ -1,4 +1,3 @@
-use crate::utils::validators::validate_stellar_address;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -19,12 +18,8 @@ pub struct Dispute {
 pub struct CreateDispute {
     #[validate(range(min = 1, message = "Challenge ID must be positive"))]
     pub challenge_id: i32,
-
-    #[validate(custom(
-        function = "validate_stellar_address",
-        message = "Invalid Stellar address format"
-    ))]
-    pub arbitrator: String,
+    // arbitrator removed — it is taken from the authenticated user's JWT
+    // (auth.address) in the service layer, never from the request body.
 }
 
 #[derive(Debug, Deserialize)]
