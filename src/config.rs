@@ -20,6 +20,10 @@ pub struct AppConfig {
     pub server_host: String,
     pub server_port: u16,
     pub cors_origins: Vec<String>,
+    pub rate_limit_global: u32,
+    pub rate_limit_auth: u32,
+    pub rate_limit_write: u32,
+    pub trusted_proxies: Vec<String>,
 }
 
 impl AppConfig {
@@ -59,6 +63,24 @@ impl AppConfig {
                 .unwrap_or_else(|_| "http://localhost:3000".into())
                 .split(',')
                 .map(|s| s.trim().to_string())
+                .collect(),
+            rate_limit_global: std::env::var("RATE_LIMIT_GLOBAL")
+                .unwrap_or_else(|_| "100".into())
+                .parse()
+                .context("RATE_LIMIT_GLOBAL must be a non-negative integer")?,
+            rate_limit_auth: std::env::var("RATE_LIMIT_AUTH")
+                .unwrap_or_else(|_| "10".into())
+                .parse()
+                .context("RATE_LIMIT_AUTH must be a non-negative integer")?,
+            rate_limit_write: std::env::var("RATE_LIMIT_WRITE")
+                .unwrap_or_else(|_| "30".into())
+                .parse()
+                .context("RATE_LIMIT_WRITE must be a non-negative integer")?,
+            trusted_proxies: std::env::var("TRUSTED_PROXIES")
+                .unwrap_or_default()
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
                 .collect(),
         })
     }

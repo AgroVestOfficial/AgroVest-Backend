@@ -16,6 +16,9 @@ axum = { version = "0.7", features = ["macros", "multipart"] }
 tokio = { version = "1", features = ["full"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace", "limit"] }
+governor = "0.6"
+nonzero_ext = "0.3"
+ipnet = "2"
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "uuid", "json"] }
 redis = { version = "0.26", features = ["tokio-comp", "connection-manager"] }
 serde = { version = "1", features = ["derive"] }
