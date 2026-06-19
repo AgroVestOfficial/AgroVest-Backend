@@ -775,9 +775,12 @@ mod integration_tests {
     }
 
     async fn setup() -> AppState {
-        AppState::new(test_config())
+        let state = AppState::new(test_config())
             .await
-            .expect("connect to test Postgres/Redis (see AGENTS.md)")
+            .expect("connect to test Postgres/Redis (see AGENTS.md)");
+        let mut conn = state.redis.clone();
+        let _: redis::RedisResult<()> = redis::cmd("FLUSHDB").query_async(&mut conn).await;
+        state
     }
 
     fn request_with_peer(
