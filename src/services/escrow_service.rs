@@ -74,12 +74,30 @@ pub async fn list_escrows(
     ))
 }
 
-pub async fn get_escrow(pool: &PgPool, id: i32) -> Result<Escrow, ApiError> {
+pub(crate) async fn get_escrow(pool: &PgPool, id: i32) -> Result<Escrow, ApiError> {
     sqlx::query_as::<_, Escrow>("SELECT * FROM escrows WHERE id = $1")
         .bind(id)
         .fetch_optional(pool)
         .await?
         .ok_or(ApiError::NotFound)
+}
+
+/// Fetch an escrow only when `user_address` is the buyer or farmer.
+/// Returns `NotFound` for both "escrow doesn't exist" and "user is not a party"
+/// so callers cannot distinguish the two cases and cannot enumerate IDs.
+pub async fn get_escrow_for_user(
+    pool: &PgPool,
+    id: i32,
+    user_address: &str,
+) -> Result<Escrow, ApiError> {
+    sqlx::query_as::<_, Escrow>(
+        "SELECT * FROM escrows WHERE id = $1 AND (buyer = $2 OR farmer = $2)",
+    )
+    .bind(id)
+    .bind(user_address)
+    .fetch_optional(pool)
+    .await?
+    .ok_or(ApiError::NotFound)
 }
 
 pub async fn create_escrow(

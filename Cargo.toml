@@ -43,3 +43,5 @@ tower = { version = "0.4", features = ["util"] }
 # `sqlx::migrate!` (apply migrations to the test database) needs the "migrate" feature,
 # which the production binary does not require (migrations are run via sqlx-cli).
 sqlx = { version = "0.8", features = ["migrate"] }
+# Used in test helpers to mint signed JWTs without importing the full auth middleware.
+jsonwebtoken = "9"
