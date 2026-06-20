@@ -21,6 +21,7 @@ pub struct AppConfig {
     pub server_host: String,
     pub server_port: u16,
     pub cors_origins: Vec<String>,
+    pub max_upload_size_mb: usize,
     pub rate_limit_global: u32,
     pub rate_limit_auth: u32,
     pub rate_limit_write: u32,
@@ -68,6 +69,9 @@ impl AppConfig {
                 .split(',')
                 .map(|s| s.trim().to_string())
                 .collect(),
+            max_upload_size_mb: std::env::var("MAX_UPLOAD_SIZE_MB")
+                .unwrap_or_else(|_| "10".into())
+                .parse()?,
             rate_limit_global: std::env::var("RATE_LIMIT_GLOBAL")
                 .unwrap_or_else(|_| "100".into())
                 .parse()

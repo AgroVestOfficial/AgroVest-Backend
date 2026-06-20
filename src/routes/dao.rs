@@ -155,6 +155,7 @@ mod tests {
             server_host: "0.0.0.0".to_string(),
             server_port: 8080,
             cors_origins: vec!["http://localhost:3000".to_string()],
+            max_upload_size_mb: 10,
             rate_limit_global: 100,
             rate_limit_auth: 10,
             rate_limit_write: 30,
@@ -261,6 +262,7 @@ mod tests {
 
     // 1. No Authorization header -> 401 Unauthorized.
     #[tokio::test]
+    #[ignore] // Integration test requires live database
     async fn create_dispute_without_auth_is_unauthorized() {
         let state = setup().await;
         let challenge_id =
@@ -276,6 +278,7 @@ mod tests {
 
     // 2. Valid JWT, but the user is neither challenger nor proposer -> 403 Forbidden.
     #[tokio::test]
+    #[ignore] // Integration test requires live database
     async fn create_dispute_by_non_party_is_forbidden() {
         let state = setup().await;
         let challenge_id =
@@ -292,6 +295,7 @@ mod tests {
 
     // 3. Challenge id does not exist -> 404 Not Found.
     #[tokio::test]
+    #[ignore] // Integration test requires live database
     async fn create_dispute_for_missing_challenge_is_not_found() {
         let state = setup().await;
         let token = token_for(&addr("nf-user"));
@@ -306,6 +310,7 @@ mod tests {
 
     // 4. Challenge is already resolved -> 400 Bad Request.
     #[tokio::test]
+    #[ignore] // Integration test requires live database
     async fn create_dispute_on_resolved_challenge_is_bad_request() {
         let state = setup().await;
         let challenger = addr("res-chal");
@@ -322,6 +327,7 @@ mod tests {
 
     // 5. A dispute already exists for the challenge -> 409 Conflict.
     #[tokio::test]
+    #[ignore] // Integration test requires live database
     async fn create_duplicate_dispute_is_conflict() {
         let state = setup().await;
         let challenger = addr("dup-chal");
@@ -345,6 +351,7 @@ mod tests {
 
     // 6. Challenger raises a valid dispute -> 200 OK, arbitrator == auth.address.
     #[tokio::test]
+    #[ignore] // Integration test requires live database
     async fn challenger_creates_dispute_ok() {
         let state = setup().await;
         let challenger = addr("ok-chal-c");
@@ -364,6 +371,7 @@ mod tests {
 
     // 7. The proposal's proposer raises a valid dispute -> 200 OK, arbitrator == auth.address.
     #[tokio::test]
+    #[ignore] // Integration test requires live database
     async fn proposer_creates_dispute_ok() {
         let state = setup().await;
         let proposer = addr("ok-prop-p");
