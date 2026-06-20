@@ -12,6 +12,7 @@ mod utils;
 use app_state::AppState;
 use config::AppConfig;
 use routes::build_router;
+use std::net::SocketAddr;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -37,7 +38,11 @@ async fn main() -> anyhow::Result<()> {
     ))
     .await?;
 
-    axum::serve(listener, build_router(state))
+    // ConnectInfo is required by the rate limit middleware to read the
+    // direct TCP peer address before considering proxy headers.
+    let app = build_router(state).into_make_service_with_connect_info::<SocketAddr>();
+
+    axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 

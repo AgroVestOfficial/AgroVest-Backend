@@ -10,6 +10,7 @@ use crate::middleware::auth::AuthUser;
 use crate::models::escrow::{CreateEscrow, EscrowFilter, EscrowStatus};
 use crate::services::escrow_service;
 use crate::utils::pagination::PaginationParams;
+use crate::utils::validators::ValidJson;
 
 #[derive(serde::Deserialize)]
 pub struct EscrowQuery {
@@ -50,8 +51,16 @@ async fn list_escrows(
 async fn get_escrow(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    auth: AuthUser,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let escrow = escrow_service::get_escrow(&state.db, id).await?;
+    let escrow = escrow_service::get_escrow_for_user(&state.db, id, &auth.address).await?;
+    tracing::info!(
+        escrow_id = id,
+        user = %auth.address,
+        buyer = %escrow.buyer,
+        farmer = %escrow.farmer,
+        "escrow detail accessed"
+    );
     Ok(Json(
         serde_json::to_value(escrow).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -60,7 +69,7 @@ async fn get_escrow(
 async fn create_escrow(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(data): Json<CreateEscrow>,
+    ValidJson(data): ValidJson<CreateEscrow>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let escrow = escrow_service::create_escrow(&state.db, &auth.address, data).await?;
     Ok(Json(
@@ -73,7 +82,7 @@ async fn approve_delivery(
     Path(id): Path<i32>,
     auth: AuthUser,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let escrow = escrow_service::get_escrow(&state.db, id).await?;
+    let escrow = escrow_service::get_escrow_for_user(&state.db, id, &auth.address).await?;
     if escrow.buyer != auth.address {
         return Err(ApiError::Forbidden);
     }
@@ -89,10 +98,7 @@ async fn raise_dispute(
     Path(id): Path<i32>,
     auth: AuthUser,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let escrow = escrow_service::get_escrow(&state.db, id).await?;
-    if escrow.buyer != auth.address && escrow.farmer != auth.address {
-        return Err(ApiError::Forbidden);
-    }
+    escrow_service::get_escrow_for_user(&state.db, id, &auth.address).await?;
     let updated =
         escrow_service::update_escrow_status(&state.db, id, EscrowStatus::Dispute).await?;
     Ok(Json(

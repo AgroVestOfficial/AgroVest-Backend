@@ -113,7 +113,13 @@ pub async fn invest(
     .bind(amount)
     .fetch_one(&mut *tx)
     .await
-    .map_err(ApiError::Database)?;
+    .map_err(|e| match e {
+        // 23503 = foreign_key_violation: the referenced farm does not exist.
+        sqlx::Error::Database(ref db_err) if db_err.code().as_deref() == Some("23503") => {
+            ApiError::BadRequest("Invalid farm_id: farm does not exist".into())
+        }
+        other => ApiError::Database(other),
+    })?;
 
     sqlx::query(
         "UPDATE investments SET amount_raised = amount_raised + $1, farm_investor_count = farm_investor_count + 1 WHERE id = $2",

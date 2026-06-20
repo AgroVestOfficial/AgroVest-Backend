@@ -9,6 +9,7 @@ use crate::error::ApiError;
 use crate::middleware::auth::AuthUser;
 use crate::models::cart_item::AddToCart;
 use crate::services::cart_service;
+use crate::utils::validators::ValidJson;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -29,7 +30,7 @@ async fn get_cart(
 async fn add_to_cart(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(data): Json<AddToCart>,
+    ValidJson(data): ValidJson<AddToCart>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let item = cart_service::add_to_cart(&state.db, &auth.address, data.product_id).await?;
     Ok(Json(

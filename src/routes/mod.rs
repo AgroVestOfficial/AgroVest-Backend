@@ -11,6 +11,7 @@ pub mod upload;
 pub mod users;
 
 use crate::app_state::AppState;
+use crate::middleware::rate_limit;
 use axum::http::HeaderValue;
 use axum::Router;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
@@ -46,10 +47,16 @@ pub fn build_router(state: AppState) -> Router {
         .merge(upload::routes())
         .merge(indexer::routes());
 
+    // Rate limiting runs before auth and before CORS preflight so a
+    // rejected request never reaches handler logic or token verification.
+    // See src/middleware/rate_limit.rs for the tier policy.
+    let rate_limit_layer = axum::middleware::from_fn_with_state(state.clone(), rate_limit::apply);
+
     Router::new()
         .nest("/api/v1", api)
         .layer(cors)
         .layer(RequestBodyLimitLayer::new(max_body_size))
+        .layer(rate_limit_layer)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

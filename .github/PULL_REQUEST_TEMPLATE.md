@@ -1,12 +1,17 @@
+Closes #(issue number)
+
 ## Description
 
-Brief description of the changes in this PR.
+<!-- What does this PR do? Why is it needed? Reference the issue: Closes #123 -->
+
+
 
 ## Type of Change
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to break)
+- [ ] Database migration
 - [ ] Documentation update
 - [ ] Refactoring (no functional changes)
 
@@ -16,29 +21,55 @@ Closes #(issue number)
 
 ## Changes Made
 
-- Change 1
-- Change 2
-- Change 3
+<!-- List the key changes. Keep it concise — reviewers can read the diff. -->
+
+-
+
+## Files Changed
+
+<!-- List the files you modified and a one-line summary of each. -->
+
+| File | Change |
+|------|--------|
+|      |        |
 
 ## Testing
 
-Describe the tests you ran and how to reproduce them.
+<!-- How did you verify this works? Be honest — do not claim tests you did not run. -->
+
+### Automated
 
 ```bash
-cargo test
-cargo clippy -- -D warnings
 cargo fmt -- --check
+cargo clippy -- -D warnings
+cargo check
+cargo test
 ```
+
+- [ ] All four commands pass locally
+
+### Manual
+
+<!-- Describe any manual testing (curl commands, database queries, psql checks). -->
+<!-- If you ran EXPLAIN ANALYZE, migration verification, or similar, paste the output. -->
+
+
+
+## Migration Notes (if applicable)
+
+<!-- Fill this section if your PR includes a migration. Remove it if not. -->
+
+- [ ] Migration applies cleanly with `sqlx migrate run`
+- [ ] Rollback migration (`.down.sql`) is provided
+- [ ] No data loss or breaking changes to existing rows
 
 ## Checklist
 
-- [ ] My code follows the project's coding standards
+- [ ] My code follows the existing patterns in this codebase
 - [ ] I have performed a self-review of my code
-- [ ] I have added tests that prove my fix is effective or my feature works
+- [ ] I have added tests where appropriate
 - [ ] New and existing unit tests pass locally with my changes
-- [ ] I have updated the documentation accordingly
-- [ ] My changes generate no new warnings
+- [ ] I have not introduced unnecessary comments, abstractions, or features beyond the scope of this PR
+- [ ] I have not committed secrets, keys, or `.env` files
+- [ ] My changes generate no new warnings from `cargo clippy`
 
-## Screenshots (if applicable)
-
-Add screenshots to help explain your changes.

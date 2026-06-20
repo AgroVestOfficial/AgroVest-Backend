@@ -46,6 +46,13 @@ When deploying AgroVest Backend:
 5. **Keep dependencies updated** — Run `cargo update` regularly
 6. **Monitor logs** — Watch for suspicious authentication attempts
 
+## Known Fixed Vulnerabilities
+
+| ID | Endpoint | Class | Fixed in |
+|----|----------|-------|----------|
+| [#6](https://github.com/AgroVestOfficial/AgroVest-Backend/issues/6) | `GET /api/v1/escrows/{id}` | BOLA — unauthenticated access to financial records | `fix/escrow-bola-auth` |
+
+
 ## Dependencies
 
 We regularly audit our dependencies for known vulnerabilities. To check locally:
