@@ -802,6 +802,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn strict_tier_blocks_the_eleventh_auth_nonce_call_from_the_same_ip() {
         let state = setup().await;
         let app = build_router(state);
@@ -883,6 +884,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn read_tier_blocks_the_hundred_and_first_farms_get_from_the_same_ip() {
         let state = setup().await;
         let app = build_router(state);
@@ -972,6 +974,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn x_ratelimit_remaining_decrements_across_successive_calls() {
         let state = setup().await;
         let app = build_router(state);
@@ -1009,6 +1012,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn x_forwarded_for_is_ignored_when_direct_peer_is_not_a_trusted_proxy() {
         let state = setup().await;
         let app = build_router(state);
