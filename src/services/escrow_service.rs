@@ -73,7 +73,8 @@ pub async fn list_escrows(
         pagination.per_page(),
     ))
 }
-    #[allow(dead_code)]pub(crate) async fn get_escrow(pool: &PgPool, id: i32) -> Result<Escrow, ApiError> {
+#[allow(dead_code)]
+pub(crate) async fn get_escrow(pool: &PgPool, id: i32) -> Result<Escrow, ApiError> {
     sqlx::query_as::<_, Escrow>("SELECT * FROM escrows WHERE id = $1")
         .bind(id)
         .fetch_optional(pool)
