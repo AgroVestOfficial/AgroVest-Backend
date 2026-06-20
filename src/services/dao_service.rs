@@ -1,15 +1,28 @@
+use crate::db::redis::{get_cached, invalidate_pattern, set_cached};
 use crate::error::ApiError;
 use crate::models::challenge::{Challenge, CreateChallenge};
 use crate::models::dispute::{CreateDispute, Dispute};
 use crate::models::proposal::{CreateProposal, Proposal};
 use crate::models::vote::Vote;
 use crate::utils::pagination::{PaginatedResponse, PaginationParams};
+use redis::aio::ConnectionManager;
 use sqlx::PgPool;
 
 pub async fn list_proposals(
     pool: &PgPool,
+    redis: &mut ConnectionManager,
     pagination: &PaginationParams,
 ) -> Result<PaginatedResponse<Proposal>, ApiError> {
+    let cache_key = format!(
+        "proposals:list:{}:{}",
+        pagination.page(),
+        pagination.per_page()
+    );
+
+    if let Some(cached) = get_cached::<PaginatedResponse<Proposal>>(redis, &cache_key).await {
+        return Ok(cached);
+    }
+
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM proposals")
         .fetch_one(pool)
         .await?;
@@ -22,12 +35,13 @@ pub async fn list_proposals(
     .fetch_all(pool)
     .await?;
 
-    Ok(PaginatedResponse::new(
-        proposals,
-        total.0,
-        pagination.page(),
-        pagination.per_page(),
-    ))
+    let result =
+        PaginatedResponse::new(proposals, total.0, pagination.page(), pagination.per_page());
+
+    // Cache for 30 seconds
+    let _ = set_cached(redis, &cache_key, &result, 30).await;
+
+    Ok(result)
 }
 
 pub async fn get_proposal(pool: &PgPool, id: i32) -> Result<Proposal, ApiError> {
@@ -40,10 +54,11 @@ pub async fn get_proposal(pool: &PgPool, id: i32) -> Result<Proposal, ApiError> 
 
 pub async fn create_proposal(
     pool: &PgPool,
+    redis: &mut ConnectionManager,
     proposer: &str,
     data: CreateProposal,
 ) -> Result<Proposal, ApiError> {
-    sqlx::query_as::<_, Proposal>(
+    let proposal = sqlx::query_as::<_, Proposal>(
         r#"
         INSERT INTO proposals (title, description, created_at_onchain, ends_at, required_votes, proposer)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -58,11 +73,17 @@ pub async fn create_proposal(
     .bind(proposer)
     .fetch_one(pool)
     .await
-    .map_err(ApiError::Database)
+    .map_err(ApiError::Database)?;
+
+    // Invalidate proposals cache
+    let _ = invalidate_pattern(redis, "proposals:*").await;
+
+    Ok(proposal)
 }
 
 pub async fn vote_on_proposal(
     pool: &PgPool,
+    redis: &mut ConnectionManager,
     voter: &str,
     proposal_id: i32,
     vote_type: &str,
@@ -73,7 +94,7 @@ pub async fn vote_on_proposal(
         _ => "undecided",
     };
 
-    sqlx::query_as::<_, Vote>(
+    let vote = sqlx::query_as::<_, Vote>(
         r#"
         INSERT INTO votes (proposal_id, voter, voting_power, vote_type)
         VALUES ($1, $2, 1, $3::vote_type)
@@ -86,7 +107,12 @@ pub async fn vote_on_proposal(
     .bind(vt)
     .fetch_one(pool)
     .await
-    .map_err(ApiError::Database)
+    .map_err(ApiError::Database)?;
+
+    // Invalidate proposals cache since vote counts changed
+    let _ = invalidate_pattern(redis, "proposals:*").await;
+
+    Ok(vote)
 }
 
 pub async fn list_challenges(pool: &PgPool) -> Result<Vec<Challenge>, ApiError> {

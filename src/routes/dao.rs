@@ -27,7 +27,8 @@ async fn list_proposals(
     State(state): State<AppState>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let result = dao_service::list_proposals(&state.db, &pagination).await?;
+    let mut redis = state.redis.clone();
+    let result = dao_service::list_proposals(&state.db, &mut redis, &pagination).await?;
     Ok(Json(
         serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -48,7 +49,8 @@ async fn create_proposal(
     auth: AuthUser,
     ValidJson(data): ValidJson<CreateProposal>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let proposal = dao_service::create_proposal(&state.db, &auth.address, data).await?;
+    let mut redis = state.redis.clone();
+    let proposal = dao_service::create_proposal(&state.db, &mut redis, &auth.address, data).await?;
     Ok(Json(
         serde_json::to_value(proposal).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -60,7 +62,9 @@ async fn vote_proposal(
     auth: AuthUser,
     ValidJson(data): ValidJson<VoteRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let vote = dao_service::vote_on_proposal(&state.db, &auth.address, id, &data.vote).await?;
+    let mut redis = state.redis.clone();
+    let vote =
+        dao_service::vote_on_proposal(&state.db, &mut redis, &auth.address, id, &data.vote).await?;
     Ok(Json(
         serde_json::to_value(vote).map_err(|e| ApiError::Internal(e.into()))?,
     ))

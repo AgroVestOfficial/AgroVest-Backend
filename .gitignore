@@ -1,3 +1,7 @@
 /target
 .env
 *.log
+/target_local
+/src/utils/target_local
+/src/services/target_local
+

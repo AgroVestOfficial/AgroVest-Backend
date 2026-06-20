@@ -41,7 +41,9 @@ async fn list_products(
         farm_id: q.farm_id,
         sold: q.sold,
     };
-    let result = product_service::list_products(&state.db, &pagination, &filter).await?;
+    let mut redis = state.redis.clone();
+    let result =
+        product_service::list_products(&state.db, &mut redis, &pagination, &filter).await?;
     Ok(Json(
         serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -51,7 +53,8 @@ async fn get_product(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let product = product_service::get_product(&state.db, id).await?;
+    let mut redis = state.redis.clone();
+    let product = product_service::get_product(&state.db, &mut redis, id).await?;
     Ok(Json(
         serde_json::to_value(product).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -62,7 +65,9 @@ async fn get_farm_products(
     Path(farm_id): Path<i32>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let result = product_service::get_farm_products(&state.db, farm_id, &pagination).await?;
+    let mut redis = state.redis.clone();
+    let result =
+        product_service::get_farm_products(&state.db, &mut redis, farm_id, &pagination).await?;
     Ok(Json(
         serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -73,7 +78,9 @@ async fn create_product(
     auth: AuthUser,
     ValidJson(data): ValidJson<CreateProduct>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let product = product_service::create_product(&state.db, &auth.address, data).await?;
+    let mut redis = state.redis.clone();
+    let product =
+        product_service::create_product(&state.db, &mut redis, &auth.address, data).await?;
     Ok(Json(
         serde_json::to_value(product).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -85,7 +92,9 @@ async fn update_product(
     auth: AuthUser,
     ValidJson(data): ValidJson<UpdateProduct>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let product = product_service::update_product(&state.db, id, &auth.address, data).await?;
+    let mut redis = state.redis.clone();
+    let product =
+        product_service::update_product(&state.db, &mut redis, id, &auth.address, data).await?;
     Ok(Json(
         serde_json::to_value(product).map_err(|e| ApiError::Internal(e.into()))?,
     ))

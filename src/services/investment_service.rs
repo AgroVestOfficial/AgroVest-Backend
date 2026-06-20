@@ -1,14 +1,28 @@
+use crate::db::redis::{get_cached, invalidate_pattern, set_cached};
 use crate::error::ApiError;
 use crate::models::investment::{CreateInvestment, Investment};
 use crate::models::investor::Investor;
 use crate::utils::pagination::{PaginatedResponse, PaginationParams};
+use redis::aio::ConnectionManager;
 use sqlx::PgPool;
 
 pub async fn list_investments(
     pool: &PgPool,
+    redis: &mut ConnectionManager,
     pagination: &PaginationParams,
     active_only: bool,
 ) -> Result<PaginatedResponse<Investment>, ApiError> {
+    let cache_key = format!(
+        "investments:list:{}:{}:{}",
+        pagination.page(),
+        pagination.per_page(),
+        if active_only { "active" } else { "all" }
+    );
+
+    if let Some(cached) = get_cached::<PaginatedResponse<Investment>>(redis, &cache_key).await {
+        return Ok(cached);
+    }
+
     let (count_sql, sql) = if active_only {
         (
             "SELECT COUNT(*) FROM investments WHERE is_active = true",
@@ -29,20 +43,40 @@ pub async fn list_investments(
         .fetch_all(pool)
         .await?;
 
-    Ok(PaginatedResponse::new(
+    let result = PaginatedResponse::new(
         investments,
         total.0,
         pagination.page(),
         pagination.per_page(),
-    ))
+    );
+
+    // Cache for 15 seconds (investments change frequently)
+    let _ = set_cached(redis, &cache_key, &result, 15).await;
+
+    Ok(result)
 }
 
-pub async fn get_investment(pool: &PgPool, id: i32) -> Result<Investment, ApiError> {
-    sqlx::query_as::<_, Investment>("SELECT * FROM investments WHERE id = $1")
+pub async fn get_investment(
+    pool: &PgPool,
+    redis: &mut ConnectionManager,
+    id: i32,
+) -> Result<Investment, ApiError> {
+    let cache_key = format!("investments:get:{}", id);
+
+    if let Some(cached) = get_cached::<Investment>(redis, &cache_key).await {
+        return Ok(cached);
+    }
+
+    let investment = sqlx::query_as::<_, Investment>("SELECT * FROM investments WHERE id = $1")
         .bind(id)
         .fetch_optional(pool)
         .await?
-        .ok_or(ApiError::NotFound)
+        .ok_or(ApiError::NotFound)?;
+
+    // Cache for 15 seconds
+    let _ = set_cached(redis, &cache_key, &investment, 15).await;
+
+    Ok(investment)
 }
 
 pub async fn get_investors(pool: &PgPool, investment_id: i32) -> Result<Vec<Investor>, ApiError> {
@@ -57,10 +91,11 @@ pub async fn get_investors(pool: &PgPool, investment_id: i32) -> Result<Vec<Inve
 
 pub async fn create_investment(
     pool: &PgPool,
+    redis: &mut ConnectionManager,
     owner: &str,
     data: CreateInvestment,
 ) -> Result<Investment, ApiError> {
-    sqlx::query_as::<_, Investment>(
+    let investment = sqlx::query_as::<_, Investment>(
         r#"
         INSERT INTO investments (farm_id, image, name, about, owner, min_amount, start_date, end_date)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -77,11 +112,17 @@ pub async fn create_investment(
     .bind(data.end_date)
     .fetch_one(pool)
     .await
-    .map_err(ApiError::Database)
+    .map_err(ApiError::Database)?;
+
+    // Invalidate investment caches
+    let _ = invalidate_pattern(redis, "investments:*").await;
+
+    Ok(investment)
 }
 
 pub async fn invest(
     pool: &PgPool,
+    redis: &mut ConnectionManager,
     investor_address: &str,
     investment_id: i32,
     amount: i64,
@@ -130,6 +171,9 @@ pub async fn invest(
     .await?;
 
     tx.commit().await.map_err(ApiError::Database)?;
+
+    // Invalidate investment caches since balance changed
+    let _ = invalidate_pattern(redis, "investments:*").await;
 
     Ok(investor)
 }

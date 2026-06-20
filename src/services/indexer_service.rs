@@ -3,6 +3,8 @@
 use crate::blockchain::soroban_client::SorobanClient;
 use sqlx::PgPool;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
 pub struct IndexerService {
     soroban: SorobanClient,
@@ -31,20 +33,48 @@ impl IndexerService {
         }
     }
 
-    pub fn start(self: Arc<Self>) {
+    pub fn start(self: Arc<Self>, cancel: CancellationToken) {
         for contract in &self.contracts {
             let svc = Arc::clone(&self);
             let addr = contract.address.clone();
             let domain = contract.domain.clone();
             let interval = self.poll_interval;
+            let cancel = cancel.clone();
 
             tokio::spawn(async move {
                 tracing::info!("Starting indexer for {} ({})", domain, addr);
+                let mut consecutive_errors = 0u32;
+
                 loop {
-                    if let Err(e) = svc.sync_contract(&addr).await {
-                        tracing::error!("Indexer error for {}: {:?}", addr, e);
+                    tokio::select! {
+                        _ = cancel.cancelled() => {
+                            tracing::info!("Indexer for {} shutting down", domain);
+                            break;
+                        }
+                        result = svc.sync_contract(&addr) => {
+                            match result {
+                                Ok(_) => {
+                                    consecutive_errors = 0;
+                                }
+                                Err(e) => {
+                                    consecutive_errors += 1;
+                                    let backoff = std::cmp::min(
+                                        interval * 2u64.pow(consecutive_errors.min(6)),
+                                        300, // max 5 minutes
+                                    );
+                                    tracing::error!(
+                                        contract = %addr,
+                                        consecutive_errors = consecutive_errors,
+                                        backoff_secs = backoff,
+                                        "Indexer error: {:?}", e
+                                    );
+                                    tokio::time::sleep(Duration::from_secs(backoff)).await;
+                                    continue;
+                                }
+                            }
+                        }
                     }
-                    tokio::time::sleep(tokio::time::Duration::from_secs(interval)).await;
+                    tokio::time::sleep(Duration::from_secs(interval)).await;
                 }
             });
         }
@@ -88,11 +118,57 @@ impl IndexerService {
         contract_address: &str,
         event: &serde_json::Value,
     ) -> anyhow::Result<()> {
-        // Parse event and update DB based on topic
-        // This is a placeholder - actual implementation depends on Soroban event format
         let ledger = event.get("ledger").and_then(|l| l.as_u64()).unwrap_or(0);
 
-        // Update indexer state
+        // Parse event topics to determine event type
+        let topics = event
+            .get("topics")
+            .and_then(|t| t.as_array())
+            .map(|t| t.to_vec())
+            .unwrap_or_default();
+
+        let event_type = topics.first().and_then(|t| t.as_str()).unwrap_or("unknown");
+
+        // Get event data
+        let data = event.get("data");
+
+        // Route to appropriate handler based on event type
+        match event_type {
+            "farm_created" => {
+                if let Some(data) = data {
+                    self.handle_farm_created(data).await.ok();
+                }
+            }
+            "investment_created" => {
+                if let Some(data) = data {
+                    self.handle_investment_created(data).await.ok();
+                }
+            }
+            "investment_funded" => {
+                if let Some(data) = data {
+                    self.handle_investment_funded(data).await.ok();
+                }
+            }
+            "escrow_created" | "escrow_completed" | "escrow_disputed" => {
+                if let Some(data) = data {
+                    self.handle_escrow_event(event_type, data).await.ok();
+                }
+            }
+            "proposal_created" | "proposal_voted" | "proposal_executed" => {
+                if let Some(data) = data {
+                    self.handle_dao_event(event_type, data).await.ok();
+                }
+            }
+            _ => {
+                tracing::debug!(
+                    event_type = event_type,
+                    contract = contract_address,
+                    "Unknown indexer event type"
+                );
+            }
+        }
+
+        // Always update synced height
         sqlx::query(
             r#"
             INSERT INTO indexer_state (contract_address, synced_height, last_synced_at)
@@ -107,6 +183,46 @@ impl IndexerService {
         .execute(&self.pool)
         .await?;
 
+        Ok(())
+    }
+
+    // Event handlers - stub implementations
+    // These would parse Soroban event data and update the appropriate tables
+    async fn handle_farm_created(&self, _data: &serde_json::Value) -> anyhow::Result<()> {
+        tracing::debug!("Processing farm_created event");
+        // TODO: Parse farm data from event and insert into farms table
+        Ok(())
+    }
+
+    async fn handle_investment_created(&self, _data: &serde_json::Value) -> anyhow::Result<()> {
+        tracing::debug!("Processing investment_created event");
+        // TODO: Parse investment data from event and insert into investments table
+        Ok(())
+    }
+
+    async fn handle_investment_funded(&self, _data: &serde_json::Value) -> anyhow::Result<()> {
+        tracing::debug!("Processing investment_funded event");
+        // TODO: Parse funding data and update investments table
+        Ok(())
+    }
+
+    async fn handle_escrow_event(
+        &self,
+        event_type: &str,
+        _data: &serde_json::Value,
+    ) -> anyhow::Result<()> {
+        tracing::debug!("Processing escrow event: {}", event_type);
+        // TODO: Parse escrow data and update escrows table based on event_type
+        Ok(())
+    }
+
+    async fn handle_dao_event(
+        &self,
+        event_type: &str,
+        _data: &serde_json::Value,
+    ) -> anyhow::Result<()> {
+        tracing::debug!("Processing DAO event: {}", event_type);
+        // TODO: Parse proposal/vote data and update proposals/votes tables
         Ok(())
     }
 }
