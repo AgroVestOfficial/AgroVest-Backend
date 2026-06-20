@@ -36,7 +36,7 @@ async fn upload_file(
     let mut file_bytes = Vec::new();
     let mut part_count = 0;
 
-    while let Some(field) = multipart
+    while let Some(mut field) = multipart
         .next_field()
         .await
         .map_err(|e| ApiError::BadRequest(format!("Multipart error: {}", e)))?
@@ -72,20 +72,17 @@ async fn upload_file(
                 )));
             }
 
-            // Read file data and validate size (defense against large uploads)
-            let file_data = field
-                .bytes()
-                .await
-                .map_err(|e| ApiError::BadRequest(format!("Read error: {}", e)))?;
-
-            if file_data.len() > max_file_size_bytes {
-                return Err(ApiError::BadRequest(format!(
-                    "File too large: maximum {}MB allowed",
-                    state.config.max_upload_size_mb
-                )));
+            // Stream file data and validate size (streaming validation)
+            // Read in chunks to avoid buffering entire file before size check
+            while let Ok(Some(chunk)) = field.chunk().await {
+                file_bytes.extend_from_slice(&chunk);
+                if file_bytes.len() > max_file_size_bytes {
+                    return Err(ApiError::BadRequest(format!(
+                        "File too large: maximum {}MB allowed",
+                        state.config.max_upload_size_mb
+                    )));
+                }
             }
-
-            file_bytes = file_data.to_vec();
         }
     }
 
