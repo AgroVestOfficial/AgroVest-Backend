@@ -14,6 +14,7 @@ use crate::app_state::AppState;
 use axum::http::HeaderValue;
 use axum::Router;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
+use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::TraceLayer;
 
 fn build_allowed_origins(origins: &[String]) -> Vec<HeaderValue> {
@@ -25,6 +26,7 @@ fn build_allowed_origins(origins: &[String]) -> Vec<HeaderValue> {
 
 pub fn build_router(state: AppState) -> Router {
     let allowed_origins = build_allowed_origins(&state.config.cors_origins);
+    let max_body_size = state.config.max_upload_size_mb * 1024 * 1024;
 
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::list(allowed_origins))
@@ -47,6 +49,7 @@ pub fn build_router(state: AppState) -> Router {
     Router::new()
         .nest("/api/v1", api)
         .layer(cors)
+        .layer(RequestBodyLimitLayer::new(max_body_size))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
