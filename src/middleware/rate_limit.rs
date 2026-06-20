@@ -844,6 +844,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn write_tier_blocks_the_thirty_first_escrows_post_from_the_same_ip() {
         let state = setup().await;
         let app = build_router(state);
@@ -920,6 +921,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn rate_limited_response_matches_api_error_json_shape() {
         let state = setup().await;
         let app = build_router(state);

@@ -54,9 +54,9 @@ pub fn build_router(state: AppState) -> Router {
 
     Router::new()
         .nest("/api/v1", api)
-        .layer(cors)
-        .layer(RequestBodyLimitLayer::new(max_body_size))
         .layer(rate_limit_layer)
+        .layer(RequestBodyLimitLayer::new(max_body_size))
+        .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

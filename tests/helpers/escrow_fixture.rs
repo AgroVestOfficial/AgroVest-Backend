@@ -2,7 +2,9 @@ use sqlx::PgPool;
 
 pub struct EscrowFixture {
     pub id: i32,
+    #[allow(dead_code)]
     pub buyer: String,
+    #[allow(dead_code)]
     pub farmer: String,
     pub amount: i64,
 }
