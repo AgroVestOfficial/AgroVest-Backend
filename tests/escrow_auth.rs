@@ -190,8 +190,8 @@ async fn test_app() -> axum::Router {
     use agrovest_backend::config::AppConfig;
     use agrovest_backend::routes::build_router;
 
-    let config = AppConfig::from_env()
-        .expect("test config: DATABASE_URL and JWT_SECRET must be set");
+    let config =
+        AppConfig::from_env().expect("test config: DATABASE_URL and JWT_SECRET must be set");
     let state = AppState::new(config)
         .await
         .expect("test AppState init failed (check DATABASE_URL and REDIS_URL)");
