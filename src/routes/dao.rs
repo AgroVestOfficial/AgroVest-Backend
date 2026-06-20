@@ -151,6 +151,7 @@ mod tests {
             server_host: "0.0.0.0".to_string(),
             server_port: 8080,
             cors_origins: vec!["http://localhost:3000".to_string()],
+            max_upload_size_mb: 10,
             rate_limit_global: 100,
             rate_limit_auth: 10,
             rate_limit_write: 30,
