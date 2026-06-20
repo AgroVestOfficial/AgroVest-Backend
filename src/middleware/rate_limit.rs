@@ -456,6 +456,7 @@ mod tests {
             server_host: String::new(),
             server_port: 0,
             cors_origins: vec![],
+            max_upload_size_mb: 10,
             rate_limit_global: 100,
             rate_limit_auth: 10,
             rate_limit_write: 30,
@@ -767,6 +768,7 @@ mod integration_tests {
             server_host: "0.0.0.0".to_string(),
             server_port: 8080,
             cors_origins: vec!["http://localhost:3000".to_string()],
+            max_upload_size_mb: 10,
             rate_limit_global: 100,
             rate_limit_auth: 10,
             rate_limit_write: 30,
@@ -800,6 +802,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn strict_tier_blocks_the_eleventh_auth_nonce_call_from_the_same_ip() {
         let state = setup().await;
         let app = build_router(state);
@@ -842,6 +845,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn write_tier_blocks_the_thirty_first_escrows_post_from_the_same_ip() {
         let state = setup().await;
         let app = build_router(state);
@@ -880,6 +884,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn read_tier_blocks_the_hundred_and_first_farms_get_from_the_same_ip() {
         let state = setup().await;
         let app = build_router(state);
@@ -918,6 +923,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn rate_limited_response_matches_api_error_json_shape() {
         let state = setup().await;
         let app = build_router(state);
@@ -968,6 +974,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn x_ratelimit_remaining_decrements_across_successive_calls() {
         let state = setup().await;
         let app = build_router(state);
@@ -1005,6 +1012,7 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    #[ignore] // Integration test requires live Redis/database
     async fn x_forwarded_for_is_ignored_when_direct_peer_is_not_a_trusted_proxy() {
         let state = setup().await;
         let app = build_router(state);
