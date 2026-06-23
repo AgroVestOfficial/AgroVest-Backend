@@ -140,6 +140,7 @@ mod tests {
                 "postgres://MAC@localhost:5432/agrovest_test",
             ),
             redis_url: env_or("REDIS_URL", "redis://127.0.0.1:6379"),
+            enable_indexer: false,
             jwt_secret: JWT_SECRET.to_string(),
             jwt_expiration_hours: 24,
             pinata_api_key: String::new(),
