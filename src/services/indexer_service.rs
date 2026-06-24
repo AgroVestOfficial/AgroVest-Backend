@@ -190,20 +190,17 @@ impl IndexerService {
     // These would parse Soroban event data and update the appropriate tables
     async fn handle_farm_created(&self, _data: &serde_json::Value) -> anyhow::Result<()> {
         tracing::debug!("Processing farm_created event");
-        // TODO: Parse farm data from event and insert into farms table
-        Ok(())
+        todo!("Parse farm data from event and insert into farms table")
     }
 
     async fn handle_investment_created(&self, _data: &serde_json::Value) -> anyhow::Result<()> {
         tracing::debug!("Processing investment_created event");
-        // TODO: Parse investment data from event and insert into investments table
-        Ok(())
+        todo!("Parse investment data from event and insert into investments table")
     }
 
     async fn handle_investment_funded(&self, _data: &serde_json::Value) -> anyhow::Result<()> {
         tracing::debug!("Processing investment_funded event");
-        // TODO: Parse funding data and update investments table
-        Ok(())
+        todo!("Parse funding data and update investments table")
     }
 
     async fn handle_escrow_event(
@@ -212,8 +209,7 @@ impl IndexerService {
         _data: &serde_json::Value,
     ) -> anyhow::Result<()> {
         tracing::debug!("Processing escrow event: {}", event_type);
-        // TODO: Parse escrow data and update escrows table based on event_type
-        Ok(())
+        todo!("Parse escrow data and update escrows table based on event_type")
     }
 
     async fn handle_dao_event(
@@ -222,7 +218,6 @@ impl IndexerService {
         _data: &serde_json::Value,
     ) -> anyhow::Result<()> {
         tracing::debug!("Processing DAO event: {}", event_type);
-        // TODO: Parse proposal/vote data and update proposals/votes tables
-        Ok(())
+        todo!("Parse proposal/vote data and update proposals/votes tables")
     }
 }

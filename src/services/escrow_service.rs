@@ -74,9 +74,6 @@ pub async fn list_escrows(
     ))
 }
 
-
-/// Fetch an escrow only when `user_address` is the buyer or farmer.
-
 /// Fetch an escrow only when `user_address` is the buyer or farmer.
 /// Returns `NotFound` for both "escrow doesn't exist" and "user is not a party"
 /// so callers cannot distinguish the two cases and cannot enumerate IDs.
