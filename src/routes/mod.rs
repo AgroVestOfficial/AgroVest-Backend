@@ -1,9 +1,9 @@
 pub mod auth;
 pub mod cart;
-pub mod health;
 pub mod dao;
 pub mod escrows;
 pub mod farms;
+pub mod health;
 pub mod indexer;
 pub mod investments;
 pub mod products;

@@ -59,10 +59,7 @@ struct DependencyChecks {
 async fn readiness(
     State(state): State<AppState>,
 ) -> Result<Json<ReadinessResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let db_ok = sqlx::query("SELECT 1")
-        .execute(&state.db)
-        .await
-        .is_ok();
+    let db_ok = sqlx::query("SELECT 1").execute(&state.db).await.is_ok();
 
     let redis_ok = redis::cmd("PING")
         .query_async::<String>(&mut state.redis.clone())
@@ -108,7 +105,12 @@ mod tests {
     async fn liveness_returns_200() {
         let app = liveness_router();
         let resp = app
-            .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
         assert_eq!(resp.status(), StatusCode::OK);
@@ -118,7 +120,12 @@ mod tests {
     async fn liveness_body_contains_status_ok() {
         let app = liveness_router();
         let resp = app
-            .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
         let bytes = axum::body::to_bytes(resp.into_body(), 4096).await.unwrap();
@@ -130,7 +137,12 @@ mod tests {
     async fn liveness_body_contains_version() {
         let app = liveness_router();
         let resp = app
-            .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
         let bytes = axum::body::to_bytes(resp.into_body(), 4096).await.unwrap();
@@ -142,7 +154,12 @@ mod tests {
     async fn liveness_body_contains_uptime_seconds() {
         let app = liveness_router();
         let resp = app
-            .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
         let bytes = axum::body::to_bytes(resp.into_body(), 4096).await.unwrap();
