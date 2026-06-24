@@ -3,6 +3,7 @@ pub mod cart;
 pub mod dao;
 pub mod escrows;
 pub mod farms;
+pub mod health;
 pub mod indexer;
 pub mod investments;
 pub mod products;
@@ -53,6 +54,7 @@ pub fn build_router(state: AppState) -> Router {
     let rate_limit_layer = axum::middleware::from_fn_with_state(state.clone(), rate_limit::apply);
 
     Router::new()
+        .merge(health::routes())
         .nest("/api/v1", api)
         .layer(rate_limit_layer)
         .layer(RequestBodyLimitLayer::new(max_body_size))
