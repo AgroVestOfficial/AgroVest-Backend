@@ -23,7 +23,8 @@ async fn list_farms(
     State(state): State<AppState>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let result = farm_service::list_farms(&state.db, &pagination).await?;
+    let mut redis = state.redis.clone();
+    let result = farm_service::list_farms(&state.db, &mut redis, &pagination).await?;
     Ok(Json(
         serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -33,7 +34,8 @@ async fn get_farm(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let farm = farm_service::get_farm(&state.db, id).await?;
+    let mut redis = state.redis.clone();
+    let farm = farm_service::get_farm(&state.db, &mut redis, id).await?;
     Ok(Json(
         serde_json::to_value(farm).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -43,7 +45,8 @@ async fn get_farm_by_address(
     State(state): State<AppState>,
     Path(address): Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let farm = farm_service::get_farm_by_address(&state.db, &address).await?;
+    let mut redis = state.redis.clone();
+    let farm = farm_service::get_farm_by_address(&state.db, &mut redis, &address).await?;
     Ok(Json(
         serde_json::to_value(farm).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -55,7 +58,8 @@ async fn create_farm(
     ValidJson(data): ValidJson<CreateFarm>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     user_service::upsert_user(&state.db, &auth.address).await?;
-    let farm = farm_service::create_farm(&state.db, &auth.address, data).await?;
+    let mut redis = state.redis.clone();
+    let farm = farm_service::create_farm(&state.db, &mut redis, &auth.address, data).await?;
     Ok(Json(
         serde_json::to_value(farm).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -67,7 +71,8 @@ async fn update_farm(
     auth: AuthUser,
     ValidJson(data): ValidJson<UpdateFarm>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let farm = farm_service::update_farm(&state.db, id, &auth.address, data).await?;
+    let mut redis = state.redis.clone();
+    let farm = farm_service::update_farm(&state.db, &mut redis, id, &auth.address, data).await?;
     Ok(Json(
         serde_json::to_value(farm).map_err(|e| ApiError::Internal(e.into()))?,
     ))

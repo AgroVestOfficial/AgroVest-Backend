@@ -17,6 +17,7 @@ pub struct AppConfig {
     pub escrow_contract_address: String,
     pub dao_contract_address: String,
     pub indexer_poll_interval_secs: u64,
+    pub enable_indexer: bool,
     pub server_host: String,
     pub server_port: u16,
     pub cors_origins: Vec<String>,
@@ -55,6 +56,9 @@ impl AppConfig {
             dao_contract_address: std::env::var("DAO_CONTRACT_ADDRESS").unwrap_or_default(),
             indexer_poll_interval_secs: std::env::var("INDEXER_POLL_INTERVAL_SECS")
                 .unwrap_or_else(|_| "5".into())
+                .parse()?,
+            enable_indexer: std::env::var("ENABLE_INDEXER")
+                .unwrap_or_else(|_| "false".into())
                 .parse()?,
             server_host: std::env::var("SERVER_HOST").unwrap_or_else(|_| "0.0.0.0".into()),
             server_port: std::env::var("SERVER_PORT")

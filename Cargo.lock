@@ -24,6 +24,7 @@ dependencies = [
  "stellar-strkey",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-util",
  "tower 0.4.13",
  "tower-http 0.5.2",
  "tracing",

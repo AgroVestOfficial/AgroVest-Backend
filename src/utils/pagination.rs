@@ -21,12 +21,41 @@ impl PaginationParams {
 }
 
 #[derive(Serialize)]
-pub struct PaginatedResponse<T: Serialize> {
+pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
     pub total: i64,
     pub page: u32,
     pub per_page: u32,
     pub total_pages: u32,
+}
+
+// Manually implement Deserialize for PaginatedResponse<T> where T is DeserializeOwned
+impl<'de, T> Deserialize<'de> for PaginatedResponse<T>
+where
+    T: Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper<T> {
+            data: Vec<T>,
+            total: i64,
+            page: u32,
+            per_page: u32,
+            total_pages: u32,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+        Ok(PaginatedResponse {
+            data: helper.data,
+            total: helper.total,
+            page: helper.page,
+            per_page: helper.per_page,
+            total_pages: helper.total_pages,
+        })
+    }
 }
 
 impl<T: Serialize> PaginatedResponse<T> {

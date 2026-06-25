@@ -1,6 +1,8 @@
 use crate::config::AppConfig;
+use crate::services::indexer_service::IndexerService;
 use crate::services::ipfs_service::IpfsService;
 use sqlx::postgres::PgPoolOptions;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -10,6 +12,7 @@ pub struct AppState {
     #[allow(dead_code)]
     pub http_client: reqwest::Client,
     pub ipfs: IpfsService,
+    pub indexer: Option<Arc<IndexerService>>,
 }
 
 impl AppState {
@@ -37,6 +40,7 @@ impl AppState {
             config,
             http_client,
             ipfs,
+            indexer: None,
         })
     }
 }

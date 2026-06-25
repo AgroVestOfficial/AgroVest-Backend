@@ -39,9 +39,14 @@ async fn list_investments(
         page: q.page,
         per_page: q.per_page,
     };
-    let result =
-        investment_service::list_investments(&state.db, &pagination, q.active.unwrap_or(false))
-            .await?;
+    let mut redis = state.redis.clone();
+    let result = investment_service::list_investments(
+        &state.db,
+        &mut redis,
+        &pagination,
+        q.active.unwrap_or(false),
+    )
+    .await?;
     Ok(Json(
         serde_json::to_value(result).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -51,7 +56,8 @@ async fn get_investment(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let investment = investment_service::get_investment(&state.db, id).await?;
+    let mut redis = state.redis.clone();
+    let investment = investment_service::get_investment(&state.db, &mut redis, id).await?;
     Ok(Json(
         serde_json::to_value(investment).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -72,7 +78,9 @@ async fn create_investment(
     auth: AuthUser,
     ValidJson(data): ValidJson<CreateInvestment>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let investment = investment_service::create_investment(&state.db, &auth.address, data).await?;
+    let mut redis = state.redis.clone();
+    let investment =
+        investment_service::create_investment(&state.db, &mut redis, &auth.address, data).await?;
     Ok(Json(
         serde_json::to_value(investment).map_err(|e| ApiError::Internal(e.into()))?,
     ))
@@ -84,7 +92,9 @@ async fn invest(
     auth: AuthUser,
     ValidJson(data): ValidJson<CreateInvestmentEntry>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let investor = investment_service::invest(&state.db, &auth.address, id, data.amount).await?;
+    let mut redis = state.redis.clone();
+    let investor =
+        investment_service::invest(&state.db, &mut redis, &auth.address, id, data.amount).await?;
     Ok(Json(
         serde_json::to_value(investor).map_err(|e| ApiError::Internal(e.into()))?,
     ))
