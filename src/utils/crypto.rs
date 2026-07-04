@@ -19,3 +19,28 @@ pub fn verify_stellar_signature(
 
     Ok(verifying_key.verify(message, &signature).is_ok())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invalid_address_returns_error() {
+        let result = verify_stellar_signature("not-an-address", b"hello", &[0u8; 64]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn empty_address_returns_error() {
+        let result = verify_stellar_signature("", b"hello", &[0u8; 64]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn valid_address_wrong_signature_length_returns_error() {
+        // Valid Stellar address format but wrong signature bytes
+        let addr = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        let result = verify_stellar_signature(addr, b"hello", &[0u8; 32]);
+        assert!(result.is_err());
+    }
+}
