@@ -126,12 +126,25 @@ impl IndexerService {
             .map(|t| t.to_vec())
             .unwrap_or_default();
 
-        let event_type = topics.first().and_then(|t| t.as_str()).unwrap_or("unknown");
+        // Soroban contracts emit two-symbol topic tuples like ("escrow", "created").
+        // The RPC returns these as ["escrow", "created"]. We concatenate both
+        // elements to form the event type string (e.g., "escrow_created").
+        let event_type = if topics.len() >= 2 {
+            let ns = topics[0].as_str().unwrap_or("unknown");
+            let name = topics[1].as_str().unwrap_or("unknown");
+            format!("{}_{}", ns, name)
+        } else {
+            topics
+                .first()
+                .and_then(|t| t.as_str())
+                .unwrap_or("unknown")
+                .to_string()
+        };
 
         let data = event.get("data");
 
-        match event_type {
-            "farm_created" => {
+        match event_type.as_str() {
+            "farm_registered" => {
                 if let Some(data) = data {
                     self.handle_farm_created(data).await?;
                 }
@@ -141,24 +154,48 @@ impl IndexerService {
                     self.handle_investment_created(data).await?;
                 }
             }
-            "investment_funded" => {
+            "investment_new_investment" => {
                 if let Some(data) = data {
                     self.handle_investment_funded(data).await?;
                 }
             }
-            "escrow_created" | "escrow_completed" | "escrow_disputed" => {
+            "escrow_created"
+            | "escrow_completed"
+            | "escrow_dispute_raised"
+            | "escrow_dispute_resolved"
+            | "escrow_delivery_approved" => {
                 if let Some(data) = data {
-                    self.handle_escrow_event(event_type, data).await?;
+                    self.handle_escrow_event(&event_type, data).await?;
                 }
             }
-            "proposal_created" | "proposal_voted" | "proposal_executed" => {
+            "dao_new_proposal" | "dao_voted" | "dao_proposal_executed" => {
                 if let Some(data) = data {
-                    self.handle_dao_event(event_type, data).await?;
+                    self.handle_dao_event(&event_type, data).await?;
+                }
+            }
+            "product_added" => {
+                if let Some(data) = data {
+                    self.handle_product_added(data).await?;
+                }
+            }
+            "product_reviewed" => {
+                if let Some(data) = data {
+                    self.handle_product_reviewed(data).await?;
+                }
+            }
+            "dao_challenge_created" | "dao_challenge_resolved" => {
+                if let Some(data) = data {
+                    self.handle_challenge_event(&event_type, data).await?;
+                }
+            }
+            "dao_dispute_initiated" | "dao_dispute_resolved" => {
+                if let Some(data) = data {
+                    self.handle_dispute_event(&event_type, data).await?;
                 }
             }
             _ => {
                 tracing::warn!(
-                    event_type = event_type,
+                    event_type = event_type.as_str(),
                     contract = contract_address,
                     "Unknown indexer event type"
                 );
@@ -313,20 +350,75 @@ impl IndexerService {
             .and_then(|v| v.as_i64())
             .ok_or_else(|| anyhow::anyhow!("investment_funded event missing investment_id"))?;
         let amount = data.get("amount").and_then(|v| v.as_i64()).unwrap_or(0);
+        let investor_address = data.get("investor").and_then(|v| v.as_str());
 
-        sqlx::query(
-            r#"
-            UPDATE investments
-            SET amount_raised = amount_raised + $2,
-                farm_investor_count = farm_investor_count + 1,
-                updated_at = NOW()
-            WHERE investment_id_onchain = $1
-            "#,
-        )
-        .bind(investment_id_onchain as i32)
-        .bind(amount)
-        .execute(&self.pool)
-        .await?;
+        if let Some(addr) = investor_address {
+            sqlx::query("INSERT INTO users (address) VALUES ($1) ON CONFLICT (address) DO NOTHING")
+                .bind(addr)
+                .execute(&self.pool)
+                .await?;
+        }
+
+        let investment_row: Option<(i32, i32)> =
+            sqlx::query_as("SELECT id, farm_id FROM investments WHERE investment_id_onchain = $1")
+                .bind(investment_id_onchain as i32)
+                .fetch_optional(&self.pool)
+                .await?;
+
+        if let Some((investment_id, farm_id)) = investment_row {
+            sqlx::query(
+                r#"
+                UPDATE investments
+                SET amount_raised = amount_raised + $2,
+                    farm_investor_count = farm_investor_count + 1,
+                    updated_at = NOW()
+                WHERE id = $1
+                "#,
+            )
+            .bind(investment_id)
+            .bind(amount)
+            .execute(&self.pool)
+            .await?;
+
+            if let Some(addr) = investor_address {
+                let existing: Option<(i64,)> = sqlx::query_as(
+                    "SELECT amount FROM investors WHERE investment_id = $1 AND investor_address = $2",
+                )
+                .bind(investment_id)
+                .bind(addr)
+                .fetch_optional(&self.pool)
+                .await?;
+
+                if existing.is_some() {
+                    sqlx::query(
+                        "UPDATE investors SET amount = amount + $3 WHERE investment_id = $1 AND investor_address = $2",
+                    )
+                    .bind(investment_id)
+                    .bind(addr)
+                    .bind(amount)
+                    .execute(&self.pool)
+                    .await?;
+                } else {
+                    sqlx::query(
+                        r#"
+                        INSERT INTO investors (farm_id, investment_id, investor_address, amount)
+                        VALUES ($1, $2, $3, $4)
+                        "#,
+                    )
+                    .bind(farm_id)
+                    .bind(investment_id)
+                    .bind(addr)
+                    .bind(amount)
+                    .execute(&self.pool)
+                    .await?;
+                }
+            }
+        } else {
+            tracing::warn!(
+                "investment_funded for unknown onchain_id {}",
+                investment_id_onchain
+            );
+        }
 
         tracing::info!(
             "Indexed investment_funded for onchain_id {}, amount {}",
@@ -349,7 +441,9 @@ impl IndexerService {
 
         let status = match event_type {
             "escrow_completed" => "complete",
-            "escrow_disputed" => "dispute",
+            "escrow_dispute_raised" => "dispute",
+            "escrow_dispute_resolved" => "complete",
+            "escrow_delivery_approved" => "complete",
             _ => "awaiting_delivery",
         };
 
@@ -392,7 +486,7 @@ impl IndexerService {
         data: &serde_json::Value,
     ) -> anyhow::Result<()> {
         match event_type {
-            "proposal_created" => {
+            "dao_new_proposal" => {
                 let proposal_id_onchain = data.get("proposal_id").and_then(|v| v.as_i64());
                 let title = data
                     .get("title")
@@ -445,7 +539,7 @@ impl IndexerService {
                     proposal_id_onchain
                 );
             }
-            "proposal_voted" => {
+            "dao_voted" => {
                 let proposal_id_onchain = data
                     .get("proposal_id")
                     .and_then(|v| v.as_i64())
@@ -523,7 +617,7 @@ impl IndexerService {
                     );
                 }
             }
-            "proposal_executed" => {
+            "dao_proposal_executed" => {
                 let proposal_id_onchain = data
                     .get("proposal_id")
                     .and_then(|v| v.as_i64())
@@ -545,6 +639,296 @@ impl IndexerService {
                 tracing::info!(
                     "Indexed proposal_executed for onchain_id {}",
                     proposal_id_onchain
+                );
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    async fn handle_product_added(&self, data: &serde_json::Value) -> anyhow::Result<()> {
+        let product_id_onchain = data.get("product_id").and_then(|v| v.as_i64());
+        let name = data
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Untitled Product");
+        let image = data.get("image").and_then(|v| v.as_str());
+        let description = data.get("description").and_then(|v| v.as_str());
+        let price = data.get("price").and_then(|v| v.as_i64()).unwrap_or(0);
+        let owner = data
+            .get("owner")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("product_added event missing owner"))?;
+        let farm_id_onchain = data.get("farm_id").and_then(|v| v.as_i64());
+        let category = data.get("category").and_then(|v| v.as_str());
+
+        sqlx::query("INSERT INTO users (address) VALUES ($1) ON CONFLICT (address) DO NOTHING")
+            .bind(owner)
+            .execute(&self.pool)
+            .await?;
+
+        let farm_id: Option<i32> = if let Some(fk) = farm_id_onchain {
+            let row: Option<(i32,)> =
+                sqlx::query_as("SELECT id FROM farms WHERE farm_id_onchain = $1")
+                    .bind(fk as i32)
+                    .fetch_optional(&self.pool)
+                    .await?;
+            row.map(|r| r.0)
+        } else {
+            None
+        };
+
+        sqlx::query(
+            r#"
+            INSERT INTO products (product_id_onchain, product_name, product_image, product_description, product_price, product_owner, farm_id, category)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (product_id_onchain) DO UPDATE SET
+                product_name = EXCLUDED.product_name,
+                product_image = EXCLUDED.product_image,
+                product_description = EXCLUDED.product_description,
+                product_price = EXCLUDED.product_price,
+                category = EXCLUDED.category,
+                updated_at = NOW()
+            "#,
+        )
+        .bind(product_id_onchain.map(|v| v as i32))
+        .bind(name)
+        .bind(image)
+        .bind(description)
+        .bind(price)
+        .bind(owner)
+        .bind(farm_id)
+        .bind(category)
+        .execute(&self.pool)
+        .await?;
+
+        tracing::info!(
+            "Indexed product_added for onchain_id {:?}",
+            product_id_onchain
+        );
+        Ok(())
+    }
+
+    async fn handle_product_reviewed(&self, data: &serde_json::Value) -> anyhow::Result<()> {
+        let reviewer = data
+            .get("reviewer")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("product_reviewed event missing reviewer"))?;
+        let product_id_onchain = data
+            .get("product_id")
+            .and_then(|v| v.as_i64())
+            .ok_or_else(|| anyhow::anyhow!("product_reviewed event missing product_id"))?;
+        let review_text = data
+            .get("review_text")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+
+        sqlx::query("INSERT INTO users (address) VALUES ($1) ON CONFLICT (address) DO NOTHING")
+            .bind(reviewer)
+            .execute(&self.pool)
+            .await?;
+
+        let product_row: Option<(i32,)> =
+            sqlx::query_as("SELECT id FROM products WHERE product_id_onchain = $1")
+                .bind(product_id_onchain as i32)
+                .fetch_optional(&self.pool)
+                .await?;
+
+        if let Some((product_id,)) = product_row {
+            sqlx::query(
+                r#"
+                INSERT INTO reviews (reviewer, review_text, product_id)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (reviewer, product_id) DO UPDATE SET
+                    review_text = EXCLUDED.review_text
+                "#,
+            )
+            .bind(reviewer)
+            .bind(review_text)
+            .bind(product_id)
+            .execute(&self.pool)
+            .await?;
+
+            tracing::info!(
+                "Indexed product_reviewed for product onchain_id {}",
+                product_id_onchain
+            );
+        } else {
+            tracing::warn!(
+                "product_reviewed for unknown product onchain_id {}",
+                product_id_onchain
+            );
+        }
+
+        Ok(())
+    }
+
+    async fn handle_challenge_event(
+        &self,
+        event_type: &str,
+        data: &serde_json::Value,
+    ) -> anyhow::Result<()> {
+        match event_type {
+            "dao_challenge_created" => {
+                let challenge_id_onchain = data.get("challenge_id").and_then(|v| v.as_i64());
+                let proposal_id_onchain = data.get("proposal_id").and_then(|v| v.as_i64());
+                let description = data.get("description").and_then(|v| v.as_str());
+                let challenger = data
+                    .get("challenger")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("challenge_created event missing challenger"))?;
+
+                sqlx::query(
+                    "INSERT INTO users (address) VALUES ($1) ON CONFLICT (address) DO NOTHING",
+                )
+                .bind(challenger)
+                .execute(&self.pool)
+                .await?;
+
+                let proposal_id: Option<i32> = if let Some(pk) = proposal_id_onchain {
+                    let row: Option<(i32,)> =
+                        sqlx::query_as("SELECT id FROM proposals WHERE proposal_id_onchain = $1")
+                            .bind(pk as i32)
+                            .fetch_optional(&self.pool)
+                            .await?;
+                    row.map(|r| r.0)
+                } else {
+                    None
+                };
+
+                if let Some(pid) = proposal_id {
+                    sqlx::query(
+                        r#"
+                        INSERT INTO challenges (challenge_id_onchain, proposal_id, description, challenger)
+                        VALUES ($1, $2, $3, $4)
+                        ON CONFLICT (challenge_id_onchain) DO UPDATE SET
+                            description = EXCLUDED.description,
+                            resolved = false
+                        "#,
+                    )
+                    .bind(challenge_id_onchain.map(|v| v as i32))
+                    .bind(pid)
+                    .bind(description)
+                    .bind(challenger)
+                    .execute(&self.pool)
+                    .await?;
+
+                    tracing::info!(
+                        "Indexed challenge_created for onchain_id {:?}",
+                        challenge_id_onchain
+                    );
+                }
+            }
+            "dao_challenge_resolved" => {
+                let challenge_id_onchain = data
+                    .get("challenge_id")
+                    .and_then(|v| v.as_i64())
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("challenge_resolved event missing challenge_id")
+                    })?;
+
+                sqlx::query(
+                    r#"
+                    UPDATE challenges
+                    SET resolved = true
+                    WHERE challenge_id_onchain = $1
+                    "#,
+                )
+                .bind(challenge_id_onchain as i32)
+                .execute(&self.pool)
+                .await?;
+
+                tracing::info!(
+                    "Indexed challenge_resolved for onchain_id {}",
+                    challenge_id_onchain
+                );
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    async fn handle_dispute_event(
+        &self,
+        event_type: &str,
+        data: &serde_json::Value,
+    ) -> anyhow::Result<()> {
+        match event_type {
+            "dao_dispute_initiated" => {
+                let dispute_id_onchain = data.get("dispute_id").and_then(|v| v.as_i64());
+                let challenge_id_onchain = data.get("challenge_id").and_then(|v| v.as_i64());
+                let caller = data
+                    .get("caller")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("dispute_initiated event missing caller"))?;
+
+                sqlx::query(
+                    "INSERT INTO users (address) VALUES ($1) ON CONFLICT (address) DO NOTHING",
+                )
+                .bind(caller)
+                .execute(&self.pool)
+                .await?;
+
+                let challenge_id: Option<i32> = if let Some(ck) = challenge_id_onchain {
+                    let row: Option<(i32,)> =
+                        sqlx::query_as("SELECT id FROM challenges WHERE challenge_id_onchain = $1")
+                            .bind(ck as i32)
+                            .fetch_optional(&self.pool)
+                            .await?;
+                    row.map(|r| r.0)
+                } else {
+                    None
+                };
+
+                if let Some(cid) = challenge_id {
+                    sqlx::query(
+                        r#"
+                        INSERT INTO disputes (dispute_id_onchain, challenge_id, arbitrator)
+                        VALUES ($1, $2, $3)
+                        ON CONFLICT (dispute_id_onchain) DO UPDATE SET
+                            resolved = false,
+                            ruling = false
+                        "#,
+                    )
+                    .bind(dispute_id_onchain.map(|v| v as i32))
+                    .bind(cid)
+                    .bind(caller)
+                    .execute(&self.pool)
+                    .await?;
+
+                    tracing::info!(
+                        "Indexed dispute_initiated for onchain_id {:?}",
+                        dispute_id_onchain
+                    );
+                }
+            }
+            "dao_dispute_resolved" => {
+                let dispute_id_onchain = data
+                    .get("dispute_id")
+                    .and_then(|v| v.as_i64())
+                    .ok_or_else(|| anyhow::anyhow!("dispute_resolved event missing dispute_id"))?;
+                let ruling = data
+                    .get("ruling")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+
+                sqlx::query(
+                    r#"
+                    UPDATE disputes
+                    SET resolved = true, ruling = $2
+                    WHERE dispute_id_onchain = $1
+                    "#,
+                )
+                .bind(dispute_id_onchain as i32)
+                .bind(ruling)
+                .execute(&self.pool)
+                .await?;
+
+                tracing::info!(
+                    "Indexed dispute_resolved for onchain_id {}",
+                    dispute_id_onchain
                 );
             }
             _ => {}
