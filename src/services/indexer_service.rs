@@ -126,12 +126,25 @@ impl IndexerService {
             .map(|t| t.to_vec())
             .unwrap_or_default();
 
-        let event_type = topics.first().and_then(|t| t.as_str()).unwrap_or("unknown");
+        // Soroban contracts emit two-symbol topic tuples like ("escrow", "created").
+        // The RPC returns these as ["escrow", "created"]. We concatenate both
+        // elements to form the event type string (e.g., "escrow_created").
+        let event_type = if topics.len() >= 2 {
+            let ns = topics[0].as_str().unwrap_or("unknown");
+            let name = topics[1].as_str().unwrap_or("unknown");
+            format!("{}_{}", ns, name)
+        } else {
+            topics
+                .first()
+                .and_then(|t| t.as_str())
+                .unwrap_or("unknown")
+                .to_string()
+        };
 
         let data = event.get("data");
 
-        match event_type {
-            "farm_created" | "farm_registered" => {
+        match event_type.as_str() {
+            "farm_registered" => {
                 if let Some(data) = data {
                     self.handle_farm_created(data).await?;
                 }
@@ -141,19 +154,23 @@ impl IndexerService {
                     self.handle_investment_created(data).await?;
                 }
             }
-            "investment_funded" | "new_investment" => {
+            "investment_new_investment" => {
                 if let Some(data) = data {
                     self.handle_investment_funded(data).await?;
                 }
             }
-            "escrow_created" | "escrow_completed" | "escrow_disputed" => {
+            "escrow_created"
+            | "escrow_completed"
+            | "escrow_dispute_raised"
+            | "escrow_dispute_resolved"
+            | "escrow_delivery_approved" => {
                 if let Some(data) = data {
-                    self.handle_escrow_event(event_type, data).await?;
+                    self.handle_escrow_event(&event_type, data).await?;
                 }
             }
-            "proposal_created" | "proposal_voted" | "proposal_executed" => {
+            "dao_new_proposal" | "dao_voted" | "dao_proposal_executed" => {
                 if let Some(data) = data {
-                    self.handle_dao_event(event_type, data).await?;
+                    self.handle_dao_event(&event_type, data).await?;
                 }
             }
             "product_added" => {
@@ -166,19 +183,19 @@ impl IndexerService {
                     self.handle_product_reviewed(data).await?;
                 }
             }
-            "challenge_created" | "challenge_resolved" => {
+            "dao_challenge_created" | "dao_challenge_resolved" => {
                 if let Some(data) = data {
-                    self.handle_challenge_event(event_type, data).await?;
+                    self.handle_challenge_event(&event_type, data).await?;
                 }
             }
-            "dispute_initiated" | "dispute_resolved" => {
+            "dao_dispute_initiated" | "dao_dispute_resolved" => {
                 if let Some(data) = data {
-                    self.handle_dispute_event(event_type, data).await?;
+                    self.handle_dispute_event(&event_type, data).await?;
                 }
             }
             _ => {
                 tracing::warn!(
-                    event_type = event_type,
+                    event_type = event_type.as_str(),
                     contract = contract_address,
                     "Unknown indexer event type"
                 );
@@ -424,7 +441,9 @@ impl IndexerService {
 
         let status = match event_type {
             "escrow_completed" => "complete",
-            "escrow_disputed" => "dispute",
+            "escrow_dispute_raised" => "dispute",
+            "escrow_dispute_resolved" => "complete",
+            "escrow_delivery_approved" => "complete",
             _ => "awaiting_delivery",
         };
 
@@ -467,7 +486,7 @@ impl IndexerService {
         data: &serde_json::Value,
     ) -> anyhow::Result<()> {
         match event_type {
-            "proposal_created" => {
+            "dao_new_proposal" => {
                 let proposal_id_onchain = data.get("proposal_id").and_then(|v| v.as_i64());
                 let title = data
                     .get("title")
@@ -520,7 +539,7 @@ impl IndexerService {
                     proposal_id_onchain
                 );
             }
-            "proposal_voted" => {
+            "dao_voted" => {
                 let proposal_id_onchain = data
                     .get("proposal_id")
                     .and_then(|v| v.as_i64())
@@ -598,7 +617,7 @@ impl IndexerService {
                     );
                 }
             }
-            "proposal_executed" => {
+            "dao_proposal_executed" => {
                 let proposal_id_onchain = data
                     .get("proposal_id")
                     .and_then(|v| v.as_i64())
@@ -751,7 +770,7 @@ impl IndexerService {
         data: &serde_json::Value,
     ) -> anyhow::Result<()> {
         match event_type {
-            "challenge_created" => {
+            "dao_challenge_created" => {
                 let challenge_id_onchain = data.get("challenge_id").and_then(|v| v.as_i64());
                 let proposal_id_onchain = data.get("proposal_id").and_then(|v| v.as_i64());
                 let description = data.get("description").and_then(|v| v.as_str());
@@ -801,7 +820,7 @@ impl IndexerService {
                     );
                 }
             }
-            "challenge_resolved" => {
+            "dao_challenge_resolved" => {
                 let challenge_id_onchain = data
                     .get("challenge_id")
                     .and_then(|v| v.as_i64())
@@ -837,7 +856,7 @@ impl IndexerService {
         data: &serde_json::Value,
     ) -> anyhow::Result<()> {
         match event_type {
-            "dispute_initiated" => {
+            "dao_dispute_initiated" => {
                 let dispute_id_onchain = data.get("dispute_id").and_then(|v| v.as_i64());
                 let challenge_id_onchain = data.get("challenge_id").and_then(|v| v.as_i64());
                 let caller = data
@@ -885,7 +904,7 @@ impl IndexerService {
                     );
                 }
             }
-            "dispute_resolved" => {
+            "dao_dispute_resolved" => {
                 let dispute_id_onchain = data
                     .get("dispute_id")
                     .and_then(|v| v.as_i64())
