@@ -15,7 +15,7 @@ pub async fn upsert_user(pool: &PgPool, address: &str) -> Result<User, ApiError>
         r#"
         INSERT INTO users (address)
         VALUES ($1)
-        ON CONFLICT (address) DO NOTHING
+        ON CONFLICT (address) DO UPDATE SET updated_at = NOW()
         RETURNING *
         "#,
     )
